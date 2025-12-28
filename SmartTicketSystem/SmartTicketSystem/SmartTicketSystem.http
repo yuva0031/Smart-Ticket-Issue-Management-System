@@ -1,0 +1,6 @@
+@SmartTicketSystem_HostAddress = http://localhost:5096
+
+GET {{SmartTicketSystem_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
