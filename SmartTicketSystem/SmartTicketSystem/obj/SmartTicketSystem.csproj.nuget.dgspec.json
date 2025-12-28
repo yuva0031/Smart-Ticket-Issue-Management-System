@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\repos\\Capstone\\SmartTicketSystem\\SmartTicketSystem\\SmartTicketSystem.csproj": {}
+    "D:\\repos\\Capstone\\Smart-Ticket-Issue-Management-System\\SmartTicketSystem\\SmartTicketSystem\\SmartTicketSystem.csproj": {}
   },
   "projects": {
-    "D:\\repos\\Capstone\\SmartTicketSystem\\SmartTicketSystem\\SmartTicketSystem.csproj": {
+    "D:\\repos\\Capstone\\Smart-Ticket-Issue-Management-System\\SmartTicketSystem\\SmartTicketSystem\\SmartTicketSystem.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\repos\\Capstone\\SmartTicketSystem\\SmartTicketSystem\\SmartTicketSystem.csproj",
+        "projectUniqueName": "D:\\repos\\Capstone\\Smart-Ticket-Issue-Management-System\\SmartTicketSystem\\SmartTicketSystem\\SmartTicketSystem.csproj",
         "projectName": "SmartTicketSystem",
-        "projectPath": "D:\\repos\\Capstone\\SmartTicketSystem\\SmartTicketSystem\\SmartTicketSystem.csproj",
+        "projectPath": "D:\\repos\\Capstone\\Smart-Ticket-Issue-Management-System\\SmartTicketSystem\\SmartTicketSystem\\SmartTicketSystem.csproj",
         "packagesPath": "C:\\Users\\hp\\.nuget\\packages\\",
-        "outputPath": "D:\\repos\\Capstone\\SmartTicketSystem\\SmartTicketSystem\\obj\\",
+        "outputPath": "D:\\repos\\Capstone\\Smart-Ticket-Issue-Management-System\\SmartTicketSystem\\SmartTicketSystem\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

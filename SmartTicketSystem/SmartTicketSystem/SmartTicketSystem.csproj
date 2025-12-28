@@ -12,14 +12,17 @@
 
   <ItemGroup>
     <Folder Include="Application\DTOs\" />
+    <Folder Include="Application\Mapping\" />
+    <Folder Include="Application\Validators\" />
     <Folder Include="Application\Services\Interfaces\" />
-    <Folder Include="Application\Controllers\" />
+    <Folder Include="API\Controllers\" />
     <Folder Include="Domain\Entities\" />
     <Folder Include="Domain\Enums\" />
     <Folder Include="Infrastructure\Utils\" />
     <Folder Include="Infrastructure\Persistence\" />
     <Folder Include="Infrastructure\Services\Implementations\" />
     <Folder Include="Infrastructure\Repositories\" />
+    <Folder Include="API\" />
   </ItemGroup>
 
 </Project>
