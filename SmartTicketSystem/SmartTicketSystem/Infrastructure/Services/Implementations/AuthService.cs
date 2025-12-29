@@ -76,4 +76,3 @@ public class AuthService : IAuthService
         return hmac.ComputeHash(Encoding.UTF8.GetBytes(password)).SequenceEqual(hash);
     }
 }
-

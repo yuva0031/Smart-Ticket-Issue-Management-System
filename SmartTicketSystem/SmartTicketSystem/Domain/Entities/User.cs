@@ -1,4 +1,6 @@
-﻿using SmartTicketSystem.Domain.Enums;
+﻿using System.Net.Sockets;
+
+using SmartTicketSystem.Domain.Enums;
 
 namespace SmartTicketSystem.Domain.Entities
 {
@@ -11,5 +13,11 @@ namespace SmartTicketSystem.Domain.Entities
         public byte[] PasswordSalt { get; set; }
         public UserProfile Profile { get; set; }
         public ICollection<UserRole> UserRoles { get; set; }
+        public ICollection<Ticket> OwnedTickets { get; set; } 
+        public ICollection<Ticket> AssignedTickets { get; set; } 
+        public ICollection<TicketComment> TicketComments { get; set; }
+        public ICollection<TicketHistory> TicketHistories { get; set; }
+        public ICollection<Notification> Notifications { get; set; }
+        public ICollection<RefreshToken> RefreshTokens { get; set; }
     }
 }
