@@ -1,7 +1,7 @@
 ﻿
 namespace SmartTicketSystem.Domain.Enums;
 
-public enum TicketStatus
+public enum TicketStatusEnum
 {
     Created = 1,
     Assigned = 2,

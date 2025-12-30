@@ -1,13 +1,22 @@
 ﻿using FluentValidation;
 
 using SmartTicketSystem.Application.DTOs.Auth;
+using SmartTicketSystem.Domain.Enums;
 public class RegisterUserValidator : AbstractValidator<RegisterUserDto>
 {
+    private readonly int[] agentAssignableRoles = {
+        (int)UserRoleEnum.SupportAgent
+    };
+
     public RegisterUserValidator()
     {
-        RuleFor(x => x.Name)
-            .NotEmpty().WithMessage("Full name is required")
-            .MinimumLength(3).WithMessage("Full name must be at least 3 characters");
+        RuleFor(x => x.FirstName)
+            .NotEmpty().WithMessage("First name is required")
+            .MinimumLength(3).WithMessage("First name must be at least 3 characters");
+
+        RuleFor(x => x.LastName)
+            .NotEmpty().WithMessage("Last name is required")
+            .MinimumLength(3).WithMessage("Last name must be at least 3 characters");
 
         RuleFor(x => x.Email)
             .NotEmpty().WithMessage("Email is required")
@@ -35,5 +44,14 @@ public class RegisterUserValidator : AbstractValidator<RegisterUserDto>
         RuleFor(x => x.Address)
             .NotEmpty().WithMessage("Address is required")
             .MinimumLength(5).WithMessage("Address is too short");
+
+        When(x => x.RoleIds.Any(r => agentAssignableRoles.Contains(r)), () =>
+        {
+            RuleFor(x => x.CategorySkillIds)
+                .NotEmpty().WithMessage("Agent must have skill categories assigned")
+                .Must(list => list.All(id => id > 0))
+                .WithMessage("Skill category IDs must be valid positive numbers");
+        });
+
     }
 }

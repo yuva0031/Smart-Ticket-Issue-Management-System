@@ -29,6 +29,4 @@ public class AuthController : ControllerBase
         if (result == null) return Unauthorized("Invalid credentials");
         return Ok(result);
     }
-
-
 }

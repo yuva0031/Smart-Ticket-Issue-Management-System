@@ -1,6 +1,6 @@
 ﻿namespace SmartTicketSystem.Domain.Enums;
 
-public enum TicketCategory
+public enum TicketCategoryEnum
 {
     Network = 1,
     Hardware = 2,

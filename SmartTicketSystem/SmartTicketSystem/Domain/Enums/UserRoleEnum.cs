@@ -1,10 +1,9 @@
 ﻿namespace SmartTicketSystem.Domain.Enums;
 
-public enum UserRole
+public enum UserRoleEnum
 {
     Admin = 1,
     SupportManager = 2,
-    SeniorAgent = 3,
-    Agent = 4,
-    EndUser = 5
+    SupportAgent = 3,
+    EndUser = 4
 }

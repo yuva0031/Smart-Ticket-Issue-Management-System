@@ -6,7 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 
 using SmartTicketSystem.Domain.Entities;
 
-namespace SmartTicketSystem.Infrastructure.Services.Implementations;
+namespace SmartTicketSystem.Infrastructure.Services;
 
 public class JwtService
 {
@@ -29,7 +29,7 @@ public class JwtService
             new Claim(ClaimTypes.Role, r.Role.RoleName)
         ));
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["JwtSettings:Secret"]));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(

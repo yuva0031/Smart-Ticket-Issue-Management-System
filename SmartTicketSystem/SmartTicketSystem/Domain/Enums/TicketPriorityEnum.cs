@@ -1,6 +1,6 @@
 ﻿namespace SmartTicketSystem.Domain.Enums;
 
-public enum TicketPriority
+public enum TicketPriorityEnum
 {
     Critical = 1,
     High = 2,

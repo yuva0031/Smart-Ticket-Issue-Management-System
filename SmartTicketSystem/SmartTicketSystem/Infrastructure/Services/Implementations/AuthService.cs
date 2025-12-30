@@ -7,18 +7,25 @@ using SmartTicketSystem.Application.DTOs.Auth;
 using SmartTicketSystem.Application.Interfaces.Repositories;
 using SmartTicketSystem.Application.Services.Interfaces;
 using SmartTicketSystem.Domain.Entities;
+using SmartTicketSystem.Domain.Enums;
 
 namespace SmartTicketSystem.Infrastructure.Services.Implementations;
 
 public class AuthService : IAuthService
 {
     private readonly IUserRepository _repo;
+    private readonly IAgentRepository _agentRepo;
     private readonly IMapper _mapper;
     private readonly JwtService _jwt;
 
-    public AuthService(IUserRepository repo, IMapper mapper, JwtService jwt)
+    public AuthService(
+        IUserRepository repo,
+        IAgentRepository agentRepo,
+        IMapper mapper,
+        JwtService jwt)
     {
         _repo = repo;
+        _agentRepo = agentRepo;
         _mapper = mapper;
         _jwt = jwt;
     }
@@ -26,8 +33,7 @@ public class AuthService : IAuthService
     public async Task<string> Register(RegisterUserDto registerUserDto)
     {
         var exists = await _repo.GetByEmail(registerUserDto.Email);
-        if (exists != null)
-            return "User already exists";
+        if (exists != null) return "User already exists";
 
         CreatePassword(registerUserDto.Password, out byte[] hash, out byte[] salt);
 
@@ -39,13 +45,44 @@ public class AuthService : IAuthService
         await _repo.AddUser(user);
         await _repo.Save();
 
-        user.UserRoles = registerUserDto.RoleIds.Select(id => new UserRole
-        {
-            UserId = user.Id,
-            RoleId = id
-        }).ToList();
+        user.UserRoles = registerUserDto.RoleIds
+            .Select(id => new UserRole { UserId = user.Id, RoleId = id })
+            .ToList();
 
         await _repo.Save();
+
+        var agentAssignableRoles = new[]
+        {
+                (int)UserRoleEnum.SupportAgent
+            };
+
+        if (registerUserDto.RoleIds.Any(r => agentAssignableRoles.Contains(r)))
+        {
+            var profile = new AgentProfile
+            {
+                UserId = user.Id,
+                CurrentWorkload = 0,
+                EscalationLevel = 1
+            };
+
+            await _agentRepo.AddProfileAsync(profile);
+            await _agentRepo.SaveAsync();
+
+            if (registerUserDto.CategorySkillIds != null && registerUserDto.CategorySkillIds.Any())
+            {
+                foreach (var categoryId in registerUserDto.CategorySkillIds)
+                {
+                    await _agentRepo.AddSkillAsync(new AgentCategorySkill
+                    {
+                        AgentProfileId = profile.Id,
+                        CategoryId = categoryId
+                    });
+                }
+
+                await _agentRepo.SaveAsync();
+            }
+        }
+
         return "Registered Successfully";
     }
 
@@ -57,7 +94,7 @@ public class AuthService : IAuthService
 
         return new AuthResponseDto
         {
-            Name = user.Name,
+            Name = user.FullName,
             Roles = user.UserRoles.Select(x => x.Role.RoleName).ToList(),
             Token = _jwt.GenerateToken(user)
         };
