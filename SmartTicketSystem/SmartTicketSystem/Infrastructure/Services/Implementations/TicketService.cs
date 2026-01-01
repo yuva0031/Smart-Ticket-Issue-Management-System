@@ -1,15 +1,13 @@
-﻿using System;
-
-using AutoMapper;
-
-using Microsoft.AspNetCore.Mvc;
-
-using SmartTicketSystem.API.Controllers;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.SignalR;
+using SmartTicketSystem.API.Events;
+using SmartTicketSystem.API.Hubs;
 using SmartTicketSystem.Application.DTOs;
 using SmartTicketSystem.Application.Interfaces.Repositories;
 using SmartTicketSystem.Application.Services.Interfaces;
 using SmartTicketSystem.Domain.Entities;
 using SmartTicketSystem.Domain.Enums;
+using SmartTicketSystem.Infrastructure.Events;
 using SmartTicketSystem.Infrastructure.Persistence;
 
 namespace SmartTicketSystem.Infrastructure.Services.Implementations;
@@ -17,81 +15,120 @@ namespace SmartTicketSystem.Infrastructure.Services.Implementations;
 public class TicketService : ITicketService
 {
     private readonly ITicketRepository _repo;
+    private readonly ITicketHistoryService _historyService;
     private readonly IMapper _mapper;
-    private readonly AppDbContext _context;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IEventQueue _eventQueue;
+    private readonly IHubContext<TicketHub> _hub;
 
-    public TicketService(ITicketRepository repo, IMapper mapper, AppDbContext context)
+    public TicketService(ITicketRepository repo, ITicketHistoryService historyService, IMapper mapper, IHubContext<TicketHub> hub, IEventQueue eventQueue, IHttpContextAccessor httpContextAccessor)
     {
         _repo = repo;
         _mapper = mapper;
-        _context = context;
+        _historyService = historyService;
+        _httpContextAccessor = httpContextAccessor;
+        _hub = hub;
+        _eventQueue = eventQueue;
     }
 
     public async Task<long> CreateAsync(CreateTicketDto dto, Guid ownerId)
     {
-        var priority = await _context.TicketPriorities.FindAsync(dto.PriorityId);
+        var ticket = _mapper.Map<Ticket>(dto);
+        ticket.OwnerId = ownerId; 
+        ticket.StatusId = 1;
 
-        var ticket = new Ticket
-        {
-            Title = dto.Title,
-            Description = dto.Description,
-            OwnerId = ownerId,
-            PriorityId = dto.PriorityId,
-            StatusId = 1,
-            DueDate = DateTime.UtcNow.AddHours(priority.SLAHours)
-        };
+        await _repo.AddAsync(ticket);
+        await _repo.SaveAsync();
 
-        _context.Tickets.Add(ticket);
-        await _context.SaveChangesAsync();
         return ticket.TicketId;
     }
 
-    public async Task<TicketResponseDto> GetByIdAsync(long ticketId)
+    public async Task<TicketResponseDto?> GetTicketVisibleToUserAsync(long ticketId, Guid userId)
     {
         var ticket = await _repo.GetByIdAsync(ticketId);
-        return ticket == null ? null : _mapper.Map<TicketResponseDto>(ticket);
-    }
+        if (ticket == null) return null;
 
-    public async Task<IEnumerable<TicketResponseDto>> GetAllAsync()
-    {
-        var data = await _repo.GetAllAsync();
-        return _mapper.Map<IEnumerable<TicketResponseDto>>(data);
+        bool allowed =
+           ticket.OwnerId == userId ||          
+           ticket.AssignedToId == userId ||       
+           ticket.AssignedToId == null ||
+           true;                                 
+
+        return allowed ? _mapper.Map<TicketResponseDto>(ticket) : null;
     }
 
     public async Task<IEnumerable<TicketResponseDto>> GetByOwnerIdAsync(Guid ownerId)
-    {
-        var data = await _repo.GetByOwnerIdAsync(ownerId);
-        return _mapper.Map<IEnumerable<TicketResponseDto>>(data);
-    }
+        => _mapper.Map<IEnumerable<TicketResponseDto>>(await _repo.GetByOwnerIdAsync(ownerId));
 
-    public async Task<IEnumerable<TicketResponseDto>> GetByAssignedToIdAsync(Guid assignedToId)
-    {
-        var data = await _repo.GetByAssignedToIdAsync(assignedToId);
-        return _mapper.Map<IEnumerable<TicketResponseDto>>(data);
-    }
+    public async Task<IEnumerable<TicketResponseDto>> GetByAssignedToIdAsync(Guid agentId)
+        => _mapper.Map<IEnumerable<TicketResponseDto>>(await _repo.GetByAssignedToAsync(agentId));
 
-    public async Task<bool> UpdateAsync(long ticketId, UpdateTicketDto dto, Guid modifiedBy)
+    public async Task<IEnumerable<TicketResponseDto>> GetUnassignedTicketsAsync()
+        => _mapper.Map<IEnumerable<TicketResponseDto>>(await _repo.GetUnassignedAsync());
+
+    public async Task<bool> UpdateAsync(long ticketId, UpdateTicketDto dto, Guid userId)
     {
         var ticket = await _repo.GetByIdAsync(ticketId);
         if (ticket == null) return false;
 
-        if (dto.PriorityId.HasValue) ticket.PriorityId = dto.PriorityId.Value;
-        if (dto.AssignedToId.HasValue) ticket.AssignedToId = dto.AssignedToId.Value;
-        ticket.StatusId = dto.StatusId;
-        ticket.UpdatedAt = DateTime.UtcNow;
+        if (!(ticket.OwnerId == userId || ticket.AssignedToId == userId || HasRole("SupportManager")))
+            return false;
 
+        var original = new
+        {
+            ticket.Title,
+            ticket.Description,
+            PriorityId = ticket.PriorityId,
+            StatusId = ticket.StatusId,
+            ticket.AssignedToId
+        };
+        Console.WriteLine("updatable: "+original.StatusId);
+
+        _mapper.Map(dto, ticket);
         await _repo.UpdateAsync(ticket);
-        await _repo.SaveChangesAsync();
+        await _repo.SaveAsync();
+
+        var changes = new Dictionary<string, string>();
+
+        void TrackChange(string field, object oldVal, object newVal)
+        {
+            var oldValue = oldVal?.ToString() ?? "";
+            var newValue = newVal?.ToString() ?? "";
+            if (oldValue == newValue) return;
+            changes[field] = $"{oldValue}|{newValue}";
+        }
+
+        TrackChange("Title", original.Title, ticket.Title);
+        TrackChange("Description", original.Description, ticket.Description);
+        TrackChange("Priority", original.PriorityId, ticket.PriorityId);
+        TrackChange("Status", original.StatusId, ticket.StatusId);
+        TrackChange("AssignedTo", original.AssignedToId, ticket.AssignedToId);
+
+
+        await _eventQueue.PublishAsync(
+            new TicketUpdatedEvent(ticketId, userId, changes)
+        );
+
         return true;
     }
 
-    public async Task<bool> DeleteAsync(long ticketId)
+    private bool HasRole(string role)
+    {
+        var user = _httpContextAccessor.HttpContext?.User;
+        return user != null && user.IsInRole(role);
+    }
+
+
+    public async Task<bool> DeleteAsync(long ticketId, Guid userId)
     {
         var ticket = await _repo.GetByIdAsync(ticketId);
         if (ticket == null) return false;
 
-        ticket.IsDeleted = true;
-        await _repo.SaveChangesAsync();
+        if (ticket.OwnerId != userId && ticket.AssignedToId != null)
+            return false;
+
+        await _repo.DeleteAsync(ticket);
+        await _repo.SaveAsync();
         return true;
     }
 }

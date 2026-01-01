@@ -5,13 +5,11 @@ using Microsoft.AspNetCore.Mvc;
 
 using SmartTicketSystem.Application.DTOs;
 using SmartTicketSystem.Application.Services.Interfaces;
-using SmartTicketSystem.Domain.Entities;
-using SmartTicketSystem.Infrastructure.Services.Implementations;
 
 namespace SmartTicketSystem.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/tickets")]
 public class TicketController : ControllerBase
 {
     private readonly ITicketService _service;
@@ -21,57 +19,66 @@ public class TicketController : ControllerBase
         _service = service;
     }
 
-    [HttpPost("create")]
+    [HttpPost]
     [Authorize(Roles = "EndUser")]
-    public async Task<IActionResult> Create([FromBody] CreateTicketDto dto)
+    public async Task<IActionResult> CreateTicket([FromBody] CreateTicketDto dto)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+        var userId = Guid.Parse(User.FindFirstValue("id"));
+        var ticketId = await _service.CreateAsync(dto, userId);
 
-        var ownerId = Guid.Parse(User.FindFirstValue("id"));
-        var ticketId = await _service.CreateAsync(dto, ownerId);
-
-        return Ok(new { Message = "Ticket Created", TicketId = ticketId });
+        return Ok(new { Message = "Ticket created successfully", TicketId = ticketId });
     }
 
-    [HttpGet("{id}")]
-    [Authorize]
-    public async Task<IActionResult> GetTicketById(long id)
+    [HttpGet("{ticketId:long}")]
+    [Authorize(Roles = "EndUser,SupportAgent,SupportManager,Admin")]
+    public async Task<IActionResult> GetTicketById(long ticketId)
     {
-        var ticket = await _service.GetByIdAsync(id);
-        return ticket == null ? NotFound("Ticket not found") : Ok(ticket);
+        var userId = Guid.Parse(User.FindFirstValue("id"));
+        var result = await _service.GetTicketVisibleToUserAsync(ticketId, userId);
+
+        return result is null ? NotFound("Ticket not found or access denied") : Ok(result);
     }
 
-    [HttpGet("all")]
-    [Authorize(Roles = "SupportAgent")]
-    public async Task<IActionResult> GetAllTickets()
+    [HttpGet("my")]
+    [Authorize(Roles = "EndUser")]
+    public async Task<IActionResult> GetMyTickets()
     {
         var userId = Guid.Parse(User.FindFirstValue("id"));
         return Ok(await _service.GetByOwnerIdAsync(userId));
     }
 
     [HttpGet("assigned")]
-    [Authorize(Roles = "Agent,SupportManager,SeniorAgent,Admin")]
-    public async Task<IActionResult> GetByAssignedToId()
+    [Authorize(Roles = "SupportAgent")]
+    public async Task<IActionResult> GetAssignedToMe()
     {
         var userId = Guid.Parse(User.FindFirstValue("id"));
         return Ok(await _service.GetByAssignedToIdAsync(userId));
     }
 
-    [HttpPut("{id}")]
-    [Authorize(Roles = "Agent,SupportManager,Admin")]
-    public async Task<IActionResult> Update(long id, UpdateTicketDto dto)
+    [HttpGet("unassigned")]
+    [Authorize(Roles = "SupportManager,Admin")]
+    public async Task<IActionResult> GetUnassignedTickets()
     {
-        var userId = Guid.Parse(User.FindFirstValue("id"));
-        var result = await _service.UpdateAsync(id, dto, userId);
-        return result ? Ok("Updated") : NotFound("Ticket not found");
+        return Ok(await _service.GetUnassignedTicketsAsync());
     }
 
-    [HttpDelete("{id}")]
-    [Authorize(Roles = "SupportManager,Admin")]
-    public async Task<IActionResult> Delete(long id)
+    [HttpPut("{ticketId:long}")]
+    [Authorize(Roles = "EndUser,SupportAgent,SupportManager")]
+    public async Task<IActionResult> UpdateTicket(long ticketId, [FromBody] UpdateTicketDto dto)
     {
-        var result = await _service.DeleteAsync(id);
-        return result ? Ok("Ticket Deleted") : NotFound("Ticket not found");
+        var userId = Guid.Parse(User.FindFirstValue("id"));
+        var updated = await _service.UpdateAsync(ticketId, dto, userId);
+
+        return updated ? Ok("Ticket updated successfully") : Forbid("Not allowed to update this ticket");
+    }
+
+    [HttpDelete("{ticketId:long}")]
+    [Authorize(Roles = "EndUser,SupportManager")]
+    public async Task<IActionResult> DeleteTicket(long ticketId)
+    {
+        var userId = Guid.Parse(User.FindFirstValue("id"));
+        var result = await _service.DeleteAsync(ticketId, userId);
+
+        return result ? Ok("Ticket deleted") : Forbid("Not allowed or ticket not found");
     }
 }

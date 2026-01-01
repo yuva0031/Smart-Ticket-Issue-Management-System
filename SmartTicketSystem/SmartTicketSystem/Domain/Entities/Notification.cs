@@ -4,7 +4,6 @@ namespace SmartTicketSystem.Domain.Entities;
 
 public class Notification
 {
-    [Key]
     public int NotificationId { get; set; }
     public Guid UserId { get; set; }
 

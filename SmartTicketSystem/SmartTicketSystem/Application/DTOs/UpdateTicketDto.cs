@@ -2,6 +2,7 @@
 
 public class UpdateTicketDto
 {
+    public string Description { get; set; }
     public int StatusId { get; set; }
     public Guid? AssignedToId { get; set; }
     public int? PriorityId { get; set; }

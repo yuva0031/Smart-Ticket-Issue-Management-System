@@ -4,11 +4,12 @@ namespace SmartTicketSystem.Application.Interfaces.Repositories;
 
 public interface ITicketRepository
 {
-    Task<Ticket> GetByIdAsync(long ticketId);
-    Task<IEnumerable<Ticket>> GetAllAsync();
-    Task<IEnumerable<Ticket>> GetByOwnerIdAsync(Guid ownerId);
-    Task<IEnumerable<Ticket>> GetByAssignedToIdAsync(Guid assignedToId);
     Task AddAsync(Ticket ticket);
+    Task<Ticket?> GetByIdAsync(long ticketId);
+    Task<IEnumerable<Ticket>> GetByOwnerIdAsync(Guid ownerId);
+    Task<IEnumerable<Ticket>> GetByAssignedToAsync(Guid agentId);
+    Task<IEnumerable<Ticket>> GetUnassignedAsync();
     Task UpdateAsync(Ticket ticket);
-    Task SaveChangesAsync();
+    Task DeleteAsync(Ticket ticket);
+    Task SaveAsync();
 }

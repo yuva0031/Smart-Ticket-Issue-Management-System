@@ -4,7 +4,6 @@ namespace SmartTicketSystem.Domain.Entities;
 
 public class ErrorLog
 {
-    [Key]
     public int ErrorId { get; set; }
     public string Message { get; set; }
     public string StackTrace { get; set; }

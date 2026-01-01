@@ -4,7 +4,6 @@ namespace SmartTicketSystem.Domain.Entities;
 
 public class TicketHistory
 {
-    [Key]
     public int HistoryId { get; set; }
     public long TicketId { get; set; }
     public Guid ModifiedBy { get; set; }

@@ -6,6 +6,6 @@ public class TicketHistoryResponseDto
     public string FieldName { get; set; }
     public string OldValue { get; set; }
     public string NewValue { get; set; }
-    public string ModifiedBy { get; set; }
+    public string ModifiedByName { get; set; }
     public DateTime ChangedAt { get; set; }
 }

@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
-
 using SmartTicketSystem.Application.DTOs;
+using SmartTicketSystem.Application.DTOs.AddTicketCommentDto;
 using SmartTicketSystem.Application.DTOs.Auth;
 using SmartTicketSystem.Domain.Entities;
 
@@ -37,15 +37,27 @@ public class MappingProfile : Profile
                 s.AssignedTo != null ? s.AssignedTo.FullName : "Unassigned"
             ));
 
-        CreateMap<AddTicketCommentDto, TicketComment>();
 
-        CreateMap<TicketComment, TicketCommentResponseDto>()
-            .ForMember(dest => dest.CommentedBy, opt => opt.MapFrom(s => s.User.FullName));
+        CreateMap<CreateTicketHistoryDto, TicketHistory>()
+            .ForMember(dest => dest.ChangedAt, opt => opt.MapFrom(_ => DateTime.UtcNow));
 
-        CreateMap<AddTicketHistoryDto, TicketHistory>();
+        CreateMap<TicketComment, CommentResponse>();
+
+        CreateMap<AddCommentRequest, TicketComment>()
+            .ForMember(dest => dest.CommentId, opt => opt.Ignore())
+            .ForMember(dest => dest.Ticket, opt => opt.Ignore())
+            .ForMember(dest => dest.User, opt => opt.Ignore());
+
+        CreateMap<AddTicketHistoryDto, TicketHistory>()
+            .ForMember(dest => dest.HistoryId, opt => opt.Ignore())
+            .ForMember(dest => dest.ChangedAt, opt => opt.MapFrom(_ => DateTime.UtcNow))
+            .ForMember(dest => dest.Ticket, opt => opt.Ignore())
+            .ForMember(dest => dest.User, opt => opt.Ignore());
+
 
         CreateMap<TicketHistory, TicketHistoryResponseDto>()
-            .ForMember(dest => dest.ModifiedBy, opt => opt.MapFrom(s => s.User.FullName));
+            .ForMember(dest => dest.ModifiedByName,
+                       opt => opt.MapFrom(src => src.User.FullName));
 
         CreateMap<TicketCategory, TicketCategoryDto>();
         CreateMap<TicketPriority, TicketPriorityDto>();

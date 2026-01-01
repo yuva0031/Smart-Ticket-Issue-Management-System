@@ -3,6 +3,7 @@ using Lucene.Net.Index;
 using Lucene.Net.QueryParsers.Classic;
 using Lucene.Net.Search;
 using Lucene.Net.Store;
+
 using LuceneDirectory = Lucene.Net.Store.Directory;
 using Version = Lucene.Net.Util.LuceneVersion;
 

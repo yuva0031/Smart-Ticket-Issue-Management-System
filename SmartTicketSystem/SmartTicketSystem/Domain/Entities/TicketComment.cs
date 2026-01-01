@@ -1,11 +1,12 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SmartTicketSystem.Domain.Entities;
 
 public class TicketComment
 {
-    [Key]
-    public int CommentId { get; set; }
+    [DatabaseGenerated(DatabaseGeneratedOption.None)]
+    public long CommentId { get; set; }
     public long TicketId { get; set; }
     public Guid UserId { get; set; }
     public string Message { get; set; }
