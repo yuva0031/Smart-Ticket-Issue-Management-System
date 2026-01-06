@@ -1,0 +1,78 @@
+.admin-container {
+  padding: 24px;
+  background-color: #f4f5f7;
+  min-height: 100vh;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 20px;
+}
+
+.content-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  
+  &.full-width { grid-column: 1 / -1; margin-top: 10px; }
+}
+
+.card-header {
+  padding: 16px 20px;
+  background: #fafbfc;
+  border-bottom: 1px solid #eee;
+  h3 { margin: 0; font-size: 14px; display: flex; align-items: center; gap: 8px; color: #444; }
+}
+
+.activity-list {
+  padding: 10px 20px;
+  .activity-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px 0;
+    border-bottom: 1px solid #f9f9f9;
+
+    .activity-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      mat-icon { font-size: 20px; color: white; }
+      &.registration { background: #0052cc; }
+      &.approved { background: #00875a; }
+      &.default { background: #6b778c; }
+    }
+
+    .activity-description { font-size: 14px; color: #172b4d; font-weight: 500; }
+    .activity-meta { 
+      font-size: 12px; color: #6b778c; margin-top: 2px;
+      display: flex; gap: 10px; align-items: center;
+    }
+    .status-tag { background: #e3f2fd; color: #1976d2; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+  }
+}
+
+.stats-list {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  .stat-item { display: flex; align-items: center; gap: 12px; }
+  .stat-icon-container {
+    width: 44px; height: 44px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    mat-icon { color: white; }
+    &.users { background: #4c9aff; }
+    &.agents { background: #36b37e; }
+    &.pending { background: #ff5630; }
+  }
+  .stat-value { font-size: 20px; font-weight: bold; }
+  .stat-label { font-size: 12px; color: #666; text-transform: uppercase; }
+}
+
+.role-badge {
+  padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold;
+  &.SupportAgent { background: #e3f2fd; color: #0d47a1; }
+  &.SupportManager { background: #f3e5f5; color: #4a148c; }
+}

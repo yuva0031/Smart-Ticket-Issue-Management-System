@@ -7,16 +7,16 @@ public sealed class TicketCommentAddedEvent : IDomainEvent
     public Guid UserId { get; }
     public string Message { get; }
     public bool IsInternal { get; }
-    public DateTime CreatedAt { get; }
+    public DateTime OccurredAt { get; }
 
     public TicketCommentAddedEvent(
-        long commentId, long ticketId, Guid userId, string message, bool isInternal, DateTime createdAt)
+        long commentId, long ticketId, Guid userId, string message, bool isInternal)
     {
         CommentId = commentId;
         TicketId = ticketId;
         UserId = userId;
         Message = message;
         IsInternal = isInternal;
-        CreatedAt = createdAt;
+        OccurredAt = DateTime.UtcNow;
     }
 }

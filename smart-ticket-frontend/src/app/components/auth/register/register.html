@@ -1,0 +1,112 @@
+<div class="register-container">
+  <mat-card class="auth-card">
+    <div class="brand-header">
+      <mat-icon class="brand-icon">confirmation_number</mat-icon>
+      <h1 class="project-name">Smart Ticket</h1>
+      <p class="project-tagline">------------ Issue Management System ------------</p>
+    </div>
+
+    <mat-card-header>
+      <mat-card-title>Create Organization Account</mat-card-title>
+      <mat-card-subtitle>Join your team's support ecosystem</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <div *ngIf="successMessage" class="alert success">
+        <mat-icon>check_circle</mat-icon>
+        <span>{{ successMessage }}</span>
+      </div>
+      <div *ngIf="errorMessage" class="alert error">
+        <mat-icon>error</mat-icon>
+        <span>{{ errorMessage }}</span>
+      </div>
+
+      <form [formGroup]="registerForm" (ngSubmit)="register()">
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>First Name</mat-label>
+            <input matInput formControlName="firstName" placeholder="Enter first name">
+            <mat-error *ngIf="f['firstName'].errors?.['required']">Required</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Last Name</mat-label>
+            <input matInput formControlName="lastName" placeholder="Enter last name">
+            <mat-error *ngIf="f['lastName'].errors?.['required']">Required</mat-error>
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Work Email Address</mat-label>
+          <mat-icon matPrefix>email</mat-icon>
+          <input matInput type="email" formControlName="email" placeholder="juser@gmail.com">
+          <mat-error *ngIf="f['email'].errors?.['email']">Invalid email format</mat-error>
+          <mat-error *ngIf="f['email'].errors?.['required']">Email is required</mat-error>
+        </mat-form-field>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Password</mat-label>
+            <input matInput [type]="hidePassword ? 'password' : 'text'" formControlName="password">
+            <button mat-icon-button matSuffix (click)="hidePassword = !hidePassword" type="button" tabindex="-1">
+              <mat-icon>{{hidePassword ? 'visibility_off' : 'visibility'}}</mat-icon>
+            </button>
+            <mat-error *ngIf="f['password'].errors?.['minlength']">Min 6 characters</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Confirm Password</mat-label>
+            <input matInput [type]="hideConfirmPassword ? 'password' : 'text'" formControlName="confirmPassword">
+            <button mat-icon-button matSuffix (click)="hideConfirmPassword = !hideConfirmPassword" type="button" tabindex="-1">
+              <mat-icon>{{hideConfirmPassword ? 'visibility_off' : 'visibility'}}</mat-icon>
+            </button>
+            <mat-error *ngIf="f['confirmPassword'].errors?.['passwordMismatch']">Passwords don't match</mat-error>
+          </mat-form-field>
+        </div>
+
+        <mat-divider class="form-divider"></mat-divider>
+        <p class="section-label">Professional Details</p>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Organizational Role</mat-label>
+          <mat-icon matPrefix>badge</mat-icon>
+          <mat-select formControlName="roleId">
+            <mat-option *ngFor="let r of lookupService.roles()" [value]="r.id">
+              {{ r.name }}
+            </mat-option>
+          </mat-select>
+          <mat-error *ngIf="f['roleId'].errors?.['required']">Please select your role</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width animate-fade" *ngIf="isSupportAgentById(f['roleId'].value)">
+          <mat-label>Specialization Skills</mat-label>
+          <mat-icon matPrefix>psychology</mat-icon>
+          <mat-select multiple formControlName="categorySkillIds">
+            <mat-option *ngFor="let c of lookupService.categories()" [value]="c.id">
+              {{ c.name }}
+            </mat-option>
+          </mat-select>
+          <mat-hint>Select technical areas you can support</mat-hint>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Contact Number</mat-label>
+          <mat-icon matPrefix>phone</mat-icon>
+          <input matInput formControlName="phoneNumber" placeholder="(+91) 98765 43210">
+        </mat-form-field>
+
+        <button mat-raised-button color="primary" type="submit" [disabled]="loading" class="register-button">
+          <span *ngIf="!loading">Create Account</span>
+          <div class="loading-wrapper" *ngIf="loading">
+            <mat-spinner diameter="20" color="accent"></mat-spinner>
+            <span>Setting up account...</span>
+          </div>
+        </button>
+      </form>
+
+      <div class="login-link">
+        Already part of the system? <a routerLink="/login">Sign In</a>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

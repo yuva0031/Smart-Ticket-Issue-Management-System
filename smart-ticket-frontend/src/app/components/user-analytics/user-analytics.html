@@ -1,0 +1,276 @@
+<div class="analytics-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <mat-icon class="header-icon">analytics</mat-icon>
+      <div class="header-text">
+        <h1>Ticket Analytics</h1>
+        <p class="subtitle">Monitor your ticket performance and trends</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button mat-icon-button [matMenuTriggerFor]="dateRangeMenu" matTooltip="Date Range">
+        <mat-icon>date_range</mat-icon>
+      </button>
+      <button mat-icon-button (click)="refreshData()" matTooltip="Refresh">
+        <mat-icon>refresh</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Date Range Menu -->
+  <mat-menu #dateRangeMenu="matMenu">
+    <button mat-menu-item *ngFor="let range of dateRanges" (click)="selectDateRange(range.value)">
+      <mat-icon>{{ range.icon }}</mat-icon>
+      <span>{{ range.label }}</span>
+    </button>
+  </mat-menu>
+
+  <!-- Loading State -->
+  <div *ngIf="loading()" class="loading-state">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Loading analytics...</p>
+  </div>
+
+  <!-- Main Content -->
+  <div *ngIf="!loading()" class="analytics-content">
+    
+    <!-- Metrics Overview -->
+    <div class="metrics-grid">
+      <mat-card class="metric-card total">
+        <div class="metric-icon">
+          <mat-icon>confirmation_number</mat-icon>
+        </div>
+        <div class="metric-content">
+          <h3>Total Tickets</h3>
+          <p class="metric-value">{{ metrics().totalTickets }}</p>
+          <span class="metric-label">All time</span>
+        </div>
+      </mat-card>
+
+      <mat-card class="metric-card open">
+        <div class="metric-icon">
+          <mat-icon>new_releases</mat-icon>
+        </div>
+        <div class="metric-content">
+          <h3>Open</h3>
+          <p class="metric-value">{{ metrics().open }}</p>
+          <span class="metric-label">Awaiting assignment</span>
+        </div>
+      </mat-card>
+
+      <mat-card class="metric-card pending">
+        <div class="metric-icon">
+          <mat-icon>pending</mat-icon>
+        </div>
+        <div class="metric-content">
+          <h3>In Progress</h3>
+          <p class="metric-value">{{ metrics().pending }}</p>
+          <span class="metric-label">Being worked on</span>
+        </div>
+      </mat-card>
+
+      <mat-card class="metric-card resolved">
+        <div class="metric-icon">
+          <mat-icon>check_circle</mat-icon>
+        </div>
+        <div class="metric-content">
+          <h3>Resolved</h3>
+          <p class="metric-value">{{ metrics().resolved }}</p>
+          <span class="metric-label">Successfully closed</span>
+        </div>
+      </mat-card>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="charts-grid">
+      
+      <!-- Status Distribution Chart -->
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-icon>donut_large</mat-icon>
+          <mat-card-title>Status Distribution</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="chart-container">
+            <div class="donut-chart">
+              <svg viewBox="0 0 200 200" class="donut-svg">
+                <circle class="donut-background" cx="100" cy="100" r="80" />
+                <circle *ngFor="let segment of statusSegments(); let i = index"
+                        [class]="'donut-segment segment-' + i"
+                        cx="100" cy="100" r="80"
+                        [attr.stroke-dasharray]="segment.dashArray"
+                        [attr.stroke-dashoffset]="segment.dashOffset"
+                        [style.stroke]="segment.color" />
+                <text x="100" y="95" class="donut-center-value">{{ metrics().totalTickets }}</text>
+                <text x="100" y="115" class="donut-center-label">Tickets</text>
+              </svg>
+            </div>
+            <div class="chart-legend">
+              <div *ngFor="let item of statusDistribution(); let i = index" class="legend-item">
+                <div class="legend-color" [style.background-color]="getStatusColor(item.status)"></div>
+                <span class="legend-label">{{ item.status }}</span>
+                <span class="legend-value">{{ item.count }} ({{ item.percentage }}%)</span>
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Priority Distribution Chart -->
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-icon>flag</mat-icon>
+          <mat-card-title>Priority Distribution</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="bar-chart-container">
+            <div class="bar-chart">
+              <div *ngFor="let item of priorityDistribution()" class="bar-group">
+                <div class="bar-wrapper">
+                  <div class="bar" 
+                       [style.height.%]="item.percentage"
+                       [class]="'bar-' + item.priority.toLowerCase()">
+                    <span class="bar-value">{{ item.count }}</span>
+                  </div>
+                </div>
+                <span class="bar-label">{{ item.priority }}</span>
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Category Breakdown -->
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-icon>category</mat-icon>
+          <mat-card-title>Category Breakdown</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="category-list">
+            <div *ngFor="let item of categoryDistribution()" class="category-item">
+              <div class="category-info">
+                <span class="category-name">{{ item.category || 'Uncategorized' }}</span>
+                <span class="category-count">{{ item.count }} tickets</span>
+              </div>
+              <div class="category-bar-wrapper">
+                <div class="category-bar" [style.width.%]="item.percentage"></div>
+              </div>
+              <span class="category-percentage">{{ item.percentage }}%</span>
+            </div>
+            <div *ngIf="categoryDistribution().length === 0" class="empty-state-small">
+              <mat-icon>inbox</mat-icon>
+              <p>No category data available</p>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Recent Activity Timeline -->
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-icon>timeline</mat-icon>
+          <mat-card-title>Recent Activity</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="activity-timeline">
+            <div *ngFor="let ticket of recentTickets()" class="timeline-item">
+              <div class="timeline-marker">
+                <div class="timeline-dot" [class]="'dot-' + ticket.status.toLowerCase()"></div>
+              </div>
+              <div class="timeline-content">
+                <div class="timeline-header">
+                  <span class="timeline-title">#{{ ticket.ticketId }} - {{ ticket.title }}</span>
+                  <span class="timeline-date">{{ ticket.createdAt | date: 'short' }}</span>
+                </div>
+                <div class="timeline-meta">
+                  <mat-chip class="status-chip" [class]="'chip-' + ticket.status.toLowerCase()">
+                    {{ ticket.status }}
+                  </mat-chip>
+                  <mat-chip class="priority-chip" [class]="'chip-' + ticket.priority.toLowerCase()">
+                    <mat-icon>flag</mat-icon>
+                    {{ ticket.priority }}
+                  </mat-chip>
+                </div>
+              </div>
+            </div>
+            <div *ngIf="recentTickets().length === 0" class="empty-state-small">
+              <mat-icon>history</mat-icon>
+              <p>No recent activity</p>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- SLA Performance Section -->
+    <div class="sla-section">
+      <mat-card class="sla-card">
+        <mat-card-header>
+          <mat-icon>schedule</mat-icon>
+          <mat-card-title>SLA Performance</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="sla-grid">
+            <div class="sla-metric">
+              <div class="sla-icon on-track">
+                <mat-icon>check_circle</mat-icon>
+              </div>
+              <div class="sla-content">
+                <h4>On Track</h4>
+                <p class="sla-value">{{ slaMetrics().onTrack }}</p>
+                <span class="sla-label">Within SLA</span>
+              </div>
+            </div>
+
+            <div class="sla-metric">
+              <div class="sla-icon breached">
+                <mat-icon>warning</mat-icon>
+              </div>
+              <div class="sla-content">
+                <h4>Breached</h4>
+                <p class="sla-value">{{ slaMetrics().breached }}</p>
+                <span class="sla-label">Past due date</span>
+              </div>
+            </div>
+
+            <div class="sla-metric">
+              <div class="sla-icon compliance">
+                <mat-icon>trending_up</mat-icon>
+              </div>
+              <div class="sla-content">
+                <h4>Compliance Rate</h4>
+                <p class="sla-value">{{ slaMetrics().complianceRate }}%</p>
+                <span class="sla-label">Overall performance</span>
+              </div>
+            </div>
+
+            <div class="sla-metric">
+              <div class="sla-icon avg-resolution">
+                <mat-icon>timer</mat-icon>
+              </div>
+              <div class="sla-content">
+                <h4>Avg Resolution</h4>
+                <p class="sla-value">{{ slaMetrics().avgResolutionDays }}d</p>
+                <span class="sla-label">Average time</span>
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+      <button mat-raised-button color="primary" routerLink="/app/tickets/create">
+        <mat-icon>add</mat-icon>
+        Create New Ticket
+      </button>
+      <button mat-raised-button routerLink="/app/tickets">
+        <mat-icon>list</mat-icon>
+        View All Tickets
+      </button>
+    </div>
+  </div>
+</div>

@@ -5,7 +5,7 @@ using SmartTicketSystem.Domain.Enums;
 
 namespace SmartTicketSystem.Application.Validators;
 
-public class UpdateTicketDtoValidator : AbstractValidator<UpdateTicketDto>
+public class UpdateTicketDtoValidator : AbstractValidator<UpdateTicketRequestDto>
 {
     public UpdateTicketDtoValidator()
     {

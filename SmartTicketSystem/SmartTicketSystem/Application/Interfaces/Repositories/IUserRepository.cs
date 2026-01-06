@@ -4,9 +4,10 @@ namespace SmartTicketSystem.Application.Interfaces.Repositories;
 
 public interface IUserRepository
 {
-    Task<User> GetByEmail(string email);
-    Task<User?> GetByEmailWithRoles(string email);
-    Task AddAgentProfile(AgentProfile profile);
-    Task AddUser(User user);
-    Task Save();
+    Task<IEnumerable<User>> GetAllUsersAsync();
+    Task<User?> GetByIdAsync(Guid id);
+    Task<IEnumerable<User>> GetSupportAgentsAsync(int? categoryId = null);
+    Task<IEnumerable<User>> GetInactiveUsersAsync();
+    Task UpdateAsync(User user);
+    Task SaveAsync();
 }

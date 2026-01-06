@@ -15,30 +15,72 @@ public class AgentRepository : IAgentRepository
         _context = context;
     }
 
+    public async Task<AgentProfile?> GetByIdAsync(Guid agentProfileId, bool includeSkills = false)
+    {
+        IQueryable<AgentProfile> query = _context.AgentProfiles;
+
+        if (includeSkills)
+        {
+            query = query
+                .Include(a => a.Skills)
+                .ThenInclude(s => s.Category);
+        }
+
+        return await query.FirstOrDefaultAsync(a => a.Id == agentProfileId);
+    }
+
     public async Task AddProfileAsync(AgentProfile profile)
     {
         await _context.AgentProfiles.AddAsync(profile);
     }
 
-    public async Task<AgentProfile> GetAgentProfileById(Guid profileId)
-        => await _context.AgentProfiles
-            .Include(a => a.Skills)
-            .FirstOrDefaultAsync(a => a.Id == profileId);
-
-    public Task<bool> SkillExists(Guid profileId, int categoryId)
-        => _context.AgentCategorySkills
-            .AnyAsync(s => s.AgentProfileId == profileId && s.CategoryId == categoryId);
-
-    public Task<AgentCategorySkill> GetAgentSkill(Guid profileId, int categoryId)
-        => _context.AgentCategorySkills
-            .FirstOrDefaultAsync(s => s.AgentProfileId == profileId && s.CategoryId == categoryId);
-
     public async Task AddSkillAsync(AgentCategorySkill skill)
-        => await _context.AgentCategorySkills.AddAsync(skill);
+    {
+        await _context.AgentCategorySkills.AddAsync(skill);
+    }
 
-    public async Task RemoveSkillAsync(AgentCategorySkill skill)
-        => _context.AgentCategorySkills.Remove(skill);
+    public async Task<AgentProfile?> GetByUserIdAsync(Guid userId, bool includeSkills = false)
+    {
+        IQueryable<AgentProfile> query = _context.AgentProfiles;
+
+        if (includeSkills)
+        {
+            query = query
+                .Include(a => a.Skills)
+                .ThenInclude(s => s.Category);
+        }
+
+        return await query.FirstOrDefaultAsync(a => a.UserId == userId);
+    }
+
+    public async Task<IReadOnlyList<AgentProfile>> GetAllAsync(bool includeSkills = false)
+    {
+        IQueryable<AgentProfile> query = _context.AgentProfiles;
+
+        if (includeSkills)
+        {
+            query = query
+                .Include(a => a.Skills)
+                .ThenInclude(s => s.Category);
+        }
+
+        return await query.ToListAsync();
+    }
+
+    public async Task<bool> CategoryExistsAsync(int categoryId)
+    {
+        return await _context.TicketCategories.AnyAsync(c => c.CategoryId == categoryId);
+    }
+
+    public async Task<IReadOnlyList<TicketCategory>> GetCategoriesByIdsAsync(IEnumerable<int> categoryIds)
+    {
+        return await _context.TicketCategories
+            .Where(c => categoryIds.Contains(c.CategoryId))
+            .ToListAsync();
+    }
 
     public async Task SaveAsync()
-        => await _context.SaveChangesAsync();
+    {
+        await _context.SaveChangesAsync();
+    }
 }

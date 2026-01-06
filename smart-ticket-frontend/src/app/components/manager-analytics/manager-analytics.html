@@ -1,0 +1,477 @@
+<div class="analytics-container">
+  <!-- Header Section -->
+  <div class="analytics-header">
+    <div class="header-content">
+      <div class="header-title">
+        <mat-icon class="header-icon">dashboard</mat-icon>
+        <div>
+          <h1>Team Analytics Dashboard</h1>
+          <p class="subtitle">Monitor team performance, workload distribution, and ticket metrics</p>
+        </div>
+      </div>
+      
+      <div class="header-actions">
+        <button 
+          mat-button 
+          [matMenuTriggerFor]="dateRangeMenu"
+          class="date-range-button">
+          <mat-icon>{{ getCurrentDateRangeIcon() }}</mat-icon>
+          {{ getCurrentDateRangeLabel() }}
+          <mat-icon>arrow_drop_down</mat-icon>
+        </button>
+        
+        <mat-menu #dateRangeMenu="matMenu">
+          @for (range of dateRanges; track range.value) {
+            <button 
+              mat-menu-item 
+              (click)="selectDateRange(range.value)"
+              [class.active]="selectedDateRange() === range.value">
+              <mat-icon>{{ range.icon }}</mat-icon>
+              <span>{{ range.label }}</span>
+            </button>
+          }
+        </mat-menu>
+        
+        <button mat-stroked-button (click)="refreshData()" [disabled]="loading()">
+          <mat-icon [class.spinning]="loading()">refresh</mat-icon>
+          Refresh
+        </button>
+      </div>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <mat-spinner diameter="60"></mat-spinner>
+      <p>Loading analytics data...</p>
+    </div>
+  } @else {
+    <!-- Key Metrics Cards -->
+    <div class="metrics-grid">
+      @for (metric of metricCards(); track metric.title) {
+        <mat-card class="metric-card" [class]="'metric-' + metric.color">
+          <mat-card-content>
+            <div class="metric-header">
+              <div class="metric-icon-wrapper" [class]="'icon-' + metric.color">
+                <mat-icon>{{ metric.icon }}</mat-icon>
+              </div>
+              <mat-icon 
+                class="info-icon" 
+                [matTooltip]="metric.tooltip"
+                matTooltipPosition="above">
+                info_outline
+              </mat-icon>
+            </div>
+            
+            <div class="metric-value">{{ metric.value }}</div>
+            <div class="metric-title">{{ metric.title }}</div>
+            
+            <div class="metric-change" [class.positive]="metric.change > 0" [class.negative]="metric.change < 0">
+              <mat-icon>{{ metric.change > 0 ? 'arrow_upward' : metric.change < 0 ? 'arrow_downward' : 'remove' }}</mat-icon>
+              <span>{{ metric.change > 0 ? '+' : '' }}{{ metric.change }}%</span>
+              <span class="change-label">{{ metric.changeLabel }}</span>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
+    </div>
+
+    <!-- Team Performance Table -->
+    <mat-card class="team-performance-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>groups</mat-icon>
+          Team Performance Overview
+        </mat-card-title>
+        <div class="card-subtitle">Individual agent metrics and workload distribution</div>
+      </mat-card-header>
+      <mat-card-content>
+        @if (teamPerformance().length > 0) {
+          <div class="table-container">
+            <table mat-table [dataSource]="teamPerformance()" class="performance-table">
+              <!-- Agent Column -->
+              <ng-container matColumnDef="agent">
+                <th mat-header-cell *matHeaderCellDef>Agent</th>
+                <td mat-cell *matCellDef="let row">
+                  <div class="agent-cell">
+                    <mat-icon class="agent-icon">person</mat-icon>
+                    <span class="agent-name">{{ row.agentName }}</span>
+                  </div>
+                </td>
+              </ng-container>
+
+              <!-- Assigned Column -->
+              <ng-container matColumnDef="assigned">
+                <th mat-header-cell *matHeaderCellDef>Assigned</th>
+                <td mat-cell *matCellDef="let row">
+                  <span class="metric-value">{{ row.assigned }}</span>
+                </td>
+              </ng-container>
+
+              <!-- Active Column -->
+              <ng-container matColumnDef="active">
+                <th mat-header-cell *matHeaderCellDef>Active</th>
+                <td mat-cell *matCellDef="let row">
+                  <mat-chip class="status-chip active-chip">{{ row.active }}</mat-chip>
+                </td>
+              </ng-container>
+
+              <!-- Resolved Column -->
+              <ng-container matColumnDef="resolved">
+                <th mat-header-cell *matHeaderCellDef>Resolved</th>
+                <td mat-cell *matCellDef="let row">
+                  <mat-chip class="status-chip resolved-chip">{{ row.resolved }}</mat-chip>
+                </td>
+              </ng-container>
+
+              <!-- Resolution Rate Column -->
+              <ng-container matColumnDef="resolutionRate">
+                <th mat-header-cell *matHeaderCellDef>Resolution Rate</th>
+                <td mat-cell *matCellDef="let row">
+                  <div class="rate-cell">
+                    <span class="rate-value">{{ row.resolutionRate }}%</span>
+                    <div class="rate-bar">
+                      <div class="rate-fill" [style.width.%]="row.resolutionRate"></div>
+                    </div>
+                  </div>
+                </td>
+              </ng-container>
+
+              <!-- Avg Time Column -->
+              <ng-container matColumnDef="avgTime">
+                <th mat-header-cell *matHeaderCellDef>Avg Time</th>
+                <td mat-cell *matCellDef="let row">
+                  <span class="time-value">
+                    <mat-icon>schedule</mat-icon>
+                    {{ row.avgResolutionTime }}d
+                  </span>
+                </td>
+              </ng-container>
+
+              <!-- Workload Column -->
+              <ng-container matColumnDef="workload">
+                <th mat-header-cell *matHeaderCellDef>Workload</th>
+                <td mat-cell *matCellDef="let row">
+                  <mat-chip [class]="getWorkloadClass(row.workload)">
+                    {{ row.workload }}%
+                  </mat-chip>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row"></tr>
+            </table>
+          </div>
+        } @else {
+          <div class="empty-state">
+            <mat-icon>people_outline</mat-icon>
+            <p>No agent data available</p>
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Charts Row -->
+    <div class="charts-row">
+      <!-- Status Distribution with Donut -->
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>donut_small</mat-icon>
+            Status Distribution
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          @if (statusDistribution().length > 0) {
+            <div class="status-visualization">
+              <div class="donut-chart-container">
+                <svg viewBox="0 0 200 200" class="donut-chart">
+                  <circle cx="100" cy="100" r="80" fill="none" stroke="#e0e0e0" stroke-width="25"/>
+                  @for (segment of statusSegments(); track $index) {
+                    <circle
+                      cx="100" cy="100" r="80" fill="none"
+                      [attr.stroke]="segment.color"
+                      stroke-width="25"
+                      [attr.stroke-dasharray]="segment.dashArray"
+                      [attr.stroke-dashoffset]="segment.dashOffset"
+                      class="donut-segment"
+                      transform="rotate(-90 100 100)"/>
+                  }
+                  <text x="100" y="95" text-anchor="middle" class="donut-total">
+                    {{ managerMetrics().totalTickets }}
+                  </text>
+                  <text x="100" y="115" text-anchor="middle" class="donut-label">
+                    Total
+                  </text>
+                </svg>
+              </div>
+
+              <div class="status-legend">
+                @for (item of statusDistribution(); track item.status) {
+                  <div class="status-item">
+                    <div class="status-label">
+                      <div class="status-dot" [style.background-color]="item.color"></div>
+                      <span>{{ item.status }}</span>
+                    </div>
+                    <div class="status-value">
+                      <span class="status-count">{{ item.count }}</span>
+                      <span class="status-percentage">{{ item.percentage }}%</span>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          } @else {
+            <div class="empty-state">
+              <mat-icon>inbox</mat-icon>
+              <p>No status data</p>
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Priority Distribution -->
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>priority_high</mat-icon>
+            Priority Breakdown
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="priority-chart">
+            @for (item of priorityDistribution(); track item.priority) {
+              <div class="priority-item">
+                <div class="priority-label">
+                  <mat-icon [style.color]="item.color">circle</mat-icon>
+                  <span>{{ item.priority }}</span>
+                  <span class="priority-count">{{ item.count }}</span>
+                </div>
+                <div class="priority-bar-container">
+                  <div 
+                    class="priority-bar" 
+                    [style.width.%]="item.percentage"
+                    [style.background-color]="item.color">
+                  </div>
+                </div>
+                <span class="priority-percentage">{{ item.percentage }}%</span>
+              </div>
+            }
+          </div>
+
+          @if (priorityDistribution().length === 0) {
+            <div class="empty-state">
+              <mat-icon>inbox</mat-icon>
+              <p>No priority data</p>
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- SLA Compliance & Category Breakdown -->
+    <div class="bottom-row">
+      <!-- SLA Compliance -->
+      <mat-card class="sla-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>verified</mat-icon>
+            SLA Compliance
+          </mat-card-title>
+          <div class="card-subtitle">Service level agreement status</div>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="sla-content">
+            <div class="sla-gauge">
+              <svg viewBox="0 0 200 120" class="gauge-chart">
+                <!-- Background Arc -->
+                <path
+                  d="M 20 100 A 80 80 0 0 1 180 100"
+                  fill="none"
+                  stroke="#e0e0e0"
+                  stroke-width="20"
+                  stroke-linecap="round"/>
+                <!-- Progress Arc -->
+                <path
+                  d="M 20 100 A 80 80 0 0 1 180 100"
+                  fill="none"
+                  [attr.stroke]="slaCompliance().complianceRate >= 90 ? '#4caf50' : 
+                                 slaCompliance().complianceRate >= 70 ? '#ff9800' : '#f44336'"
+                  stroke-width="20"
+                  stroke-linecap="round"
+                  [attr.stroke-dasharray]="251.2"
+                  [attr.stroke-dashoffset]="251.2 - (251.2 * slaCompliance().complianceRate / 100)"/>
+                <!-- Center Text -->
+                <text x="100" y="85" text-anchor="middle" class="gauge-value">
+                  {{ slaCompliance().complianceRate }}%
+                </text>
+                <text x="100" y="105" text-anchor="middle" class="gauge-label">
+                  Compliance
+                </text>
+              </svg>
+            </div>
+
+            <div class="sla-details">
+              <div class="sla-detail-item">
+                <mat-icon class="detail-icon compliant">check_circle</mat-icon>
+                <div>
+                  <div class="detail-value">{{ slaCompliance().compliant }}</div>
+                  <div class="detail-label">On Track</div>
+                </div>
+              </div>
+              <div class="sla-detail-item">
+                <mat-icon class="detail-icon breached">error</mat-icon>
+                <div>
+                  <div class="detail-value">{{ slaCompliance().breached }}</div>
+                  <div class="detail-label">Breached</div>
+                </div>
+              </div>
+              <div class="sla-detail-item">
+                <mat-icon class="detail-icon total">flag</mat-icon>
+                <div>
+                  <div class="detail-value">{{ slaCompliance().total }}</div>
+                  <div class="detail-label">Total with SLA</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Category Breakdown -->
+      <mat-card class="category-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>category</mat-icon>
+            Category Breakdown
+          </mat-card-title>
+          <div class="card-subtitle">Top ticket categories</div>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="category-list">
+            @for (cat of categoryBreakdown(); track cat.category) {
+              <div class="category-item">
+                <div class="category-header">
+                  <span class="category-name">{{ cat.category }}</span>
+                  <mat-chip class="category-percentage">{{ cat.percentage }}%</mat-chip>
+                </div>
+                <div class="category-stats">
+                  <span class="stat-item">
+                    <mat-icon>inbox</mat-icon>
+                    {{ cat.total }} total
+                  </span>
+                  <span class="stat-item unassigned">
+                    <mat-icon>assignment_late</mat-icon>
+                    {{ cat.unassigned }} unassigned
+                  </span>
+                  <span class="stat-item active">
+                    <mat-icon>pending</mat-icon>
+                    {{ cat.assigned }} active
+                  </span>
+                  <span class="stat-item resolved">
+                    <mat-icon>check_circle</mat-icon>
+                    {{ cat.resolved }} resolved
+                  </span>
+                </div>
+              </div>
+            }
+
+            @if (categoryBreakdown().length === 0) {
+              <div class="empty-state">
+                <mat-icon>category</mat-icon>
+                <p>No category data</p>
+              </div>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Trend Analysis (FIXED) -->
+    <mat-card class="trend-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>trending_up</mat-icon>
+          4-Week Trend Analysis
+        </mat-card-title>
+        <div class="card-subtitle">Ticket creation and resolution trends</div>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="trend-chart">
+          @for (week of trendData(); track week.period) {
+            <div class="trend-week">
+              <div class="trend-bars">
+                <div class="trend-bar-group">
+                  <div 
+                    class="trend-bar created" 
+                    [style.height.%]="week.createdHeight"
+                    [matTooltip]="week.created + ' created'">
+                  </div>
+                  <div 
+                    class="trend-bar resolved" 
+                    [style.height.%]="week.resolvedHeight"
+                    [matTooltip]="week.resolved + ' resolved'">
+                  </div>
+                </div>
+              </div>
+              <div class="trend-label">{{ week.period }}</div>
+              <div class="trend-stats">
+                <span class="created-count">{{ week.created }}</span>
+                <span class="resolved-count">{{ week.resolved }}</span>
+              </div>
+            </div>
+          }
+        </div>
+        <div class="trend-legend">
+          <div class="legend-item">
+            <div class="legend-color created"></div>
+            <span>Created</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color resolved"></div>
+            <span>Resolved</span>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Alert Banners -->
+    @if (managerMetrics().unassigned > 0) {
+      <mat-card class="insights-banner warning">
+        <mat-icon>assignment_late</mat-icon>
+        <div class="banner-content">
+          <h3>Unassigned Tickets</h3>
+          <p><strong>{{ managerMetrics().unassigned }} tickets</strong> are waiting for agent assignment. Consider distributing workload to improve response times.</p>
+        </div>
+        <button mat-raised-button color="warn" routerLink="/manager/tickets">
+          Assign Now
+          <mat-icon>arrow_forward</mat-icon>
+        </button>
+      </mat-card>
+    }
+
+    @if (slaCompliance().complianceRate >= 90) {
+      <mat-card class="insights-banner success">
+        <mat-icon>celebration</mat-icon>
+        <div class="banner-content">
+          <h3>Excellent SLA Performance!</h3>
+          <p>Your team is maintaining a <strong>{{ slaCompliance().complianceRate }}%</strong> SLA compliance rate. Great job!</p>
+        </div>
+      </mat-card>
+    }
+
+    @if (slaCompliance().complianceRate < 70 && slaCompliance().breached > 0) {
+      <mat-card class="insights-banner error">
+        <mat-icon>error</mat-icon>
+        <div class="banner-content">
+          <h3>SLA Compliance Alert</h3>
+          <p><strong>{{ slaCompliance().breached }} tickets</strong> have breached SLA. Current compliance: {{ slaCompliance().complianceRate }}%. Immediate action recommended.</p>
+        </div>
+        <button mat-raised-button color="accent" routerLink="/manager/sla-rules">
+          Review SLA Rules
+          <mat-icon>arrow_forward</mat-icon>
+        </button>
+      </mat-card>
+    }
+  }
+</div>

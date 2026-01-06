@@ -1,0 +1,118 @@
+<div class="admin-page-container">
+  <div class="page-header">
+    <div class="title-group">
+      <mat-icon>support_agent</mat-icon>
+      <h2>Support Agents</h2>
+    </div>
+    <div class="header-stats">
+      <span class="stat-badge">{{ filteredAgents().length }} Active Agents</span>
+    </div>
+  </div>
+
+  <div class="table-actions">
+    <mat-form-field class="search-field" appearance="outline">
+      <mat-label>Search agents</mat-label>
+      <input matInput 
+             [ngModel]="searchTerm()" 
+             (ngModelChange)="searchTerm.set($event); applyFilter()" 
+             placeholder="Search by email or name...">
+      <mat-icon matPrefix>search</mat-icon>
+      <button mat-icon-button matSuffix *ngIf="searchTerm()" (click)="clearSearch()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </mat-form-field>
+
+    <div class="button-group">
+      <button mat-raised-button color="primary" (click)="refreshData()" [disabled]="loading()">
+        <mat-icon *ngIf="!loading()">refresh</mat-icon>
+        <mat-spinner diameter="20" *ngIf="loading()"></mat-spinner>
+        Refresh
+      </button>
+
+    </div>
+  </div>
+
+  <div class="admin-card">
+    <table mat-table [dataSource]="paginatedAgents()" matSort (matSortChange)="onSortChange($event)">
+      
+      <ng-container matColumnDef="email">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Agent Email</th>
+        <td mat-cell *matCellDef="let agent">
+          <div class="user-cell">
+            <div class="avatar">{{ getInitials(agent.email) }}</div>
+            <strong>{{ agent.email }}</strong>
+          </div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="fullName">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Full Name</th>
+        <td mat-cell *matCellDef="let agent">{{ agent.fullName || '—' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="role">
+        <th mat-header-cell *matHeaderCellDef>Designation</th>
+        <td mat-cell *matCellDef="let agent">
+          <span class="role-badge">Support Agent</span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef>Status</th>
+        <td mat-cell *matCellDef="let agent">
+          <span class="status-chip active">
+            <mat-icon class="status-icon">circle</mat-icon>
+            Online
+          </span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="joined">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header="createdAt">Joined</th>
+        <td mat-cell *matCellDef="let agent">{{ agent.createdAt | date:'MMM d, yyyy' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef="let agent">
+          <button mat-icon-button [matMenuTriggerFor]="menu">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+          <mat-menu #menu="matMenu">
+            <button mat-menu-item (click)="viewProfile(agent)">
+              <mat-icon>visibility</mat-icon>
+              <span>View Profile</span>
+            </button>
+            <button mat-menu-item>
+              <mat-icon>bar_chart</mat-icon>
+              <span>View Performance</span>
+            </button>
+            <button mat-menu-item>
+              <mat-icon>assignment</mat-icon>
+              <span>Assigned Tickets</span>
+            </button>
+          </mat-menu>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+      <tr *ngIf="filteredAgents().length === 0 && !loading()">
+        <td colspan="6" class="no-data">
+          <mat-icon>person_off</mat-icon>
+          <p *ngIf="searchTerm()">No agents found matching "{{ searchTerm() }}"</p>
+          <p *ngIf="!searchTerm()">No support agents found.</p>
+        </td>
+      </tr>
+    </table>
+
+    <mat-paginator
+      [length]="filteredAgents().length"
+      [pageSize]="pageSize()"
+      [pageSizeOptions]="[10, 25, 50]"
+      (page)="onPageChange($event)"
+      showFirstLastButtons>
+    </mat-paginator>
+  </div>
+</div>

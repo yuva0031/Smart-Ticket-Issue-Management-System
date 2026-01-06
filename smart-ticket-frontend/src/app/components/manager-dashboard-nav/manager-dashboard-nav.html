@@ -1,0 +1,129 @@
+<mat-sidenav-container class="app-container">
+  <mat-sidenav #sidenav mode="side" opened class="app-sidenav">
+    <div class="sidenav-flex-wrapper">
+      
+      <div class="nav-top-section">
+        <div class="portal-header">
+          <mat-icon class="portal-icon">admin_panel_settings</mat-icon>
+          <div class="portal-info">
+            <span class="portal-title">Manager Portal</span>
+            <span class="portal-subtitle">Support Management</span>
+          </div>
+        </div>
+
+        <mat-nav-list>
+          <a mat-list-item routerLink="/manager/dashboard" routerLinkActive="active-link">
+            <mat-icon matListItemIcon>dashboard</mat-icon>
+            <span matListItemTitle>Dashboard</span>
+          </a>
+
+          <a mat-list-item routerLink="/manager/tickets" routerLinkActive="active-link">
+            <mat-icon matListItemIcon 
+                      [matBadge]="unassignedCount()" 
+                      matBadgeColor="warn" 
+                      [matBadgeHidden]="unassignedCount() === 0">
+              confirmation_number
+            </mat-icon>
+            <span matListItemTitle>All Tickets</span>
+          </a>
+          <a mat-list-item routerLink="/manager/sla-rules" routerLinkActive="active-link">
+            <mat-icon matListItemIcon>rules</mat-icon>
+            <span matListItemTitle>SLA Rules</span>
+          </a>
+          <a mat-list-item routerLink="/manager/analytics" routerLinkActive="active-link">
+            <mat-icon matListItemIcon>analytics</mat-icon>
+            <span matListItemTitle>Analytics</span>
+          </a>
+        </mat-nav-list>
+      </div>
+
+      <div class="sidebar-footer">
+        <mat-divider></mat-divider>
+        <button mat-button class="logout-btn" (click)="logout()">
+          <mat-icon>logout</mat-icon>
+          <span>Logout</span>
+        </button>
+      </div>
+    </div>
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+    <mat-toolbar color="primary">
+      <button mat-icon-button (click)="sidenav.toggle()"><mat-icon>menu</mat-icon></button>
+      <span>Support Manager Dashboard</span>
+      <span class="spacer"></span>
+      
+      <button mat-icon-button [matMenuTriggerFor]="notificationMenu"
+              [matBadge]="getNotificationCount()" matBadgeColor="warn" 
+              [matBadgeHidden]="getNotificationCount() === 0">
+        <mat-icon>notifications</mat-icon>
+      </button>
+
+      <button mat-icon-button [matMenuTriggerFor]="userMenu">
+        <mat-icon>account_circle</mat-icon>
+      </button>
+    </mat-toolbar>
+
+    <main class="main-content">
+      <router-outlet></router-outlet>
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>
+
+<mat-menu #notificationMenu="matMenu" class="notification-menu" xPosition="before">
+  <div class="notification-header" (click)="$event.stopPropagation()">
+    <span>Notifications</span>
+    <span class="notification-count" *ngIf="getNotificationCount() > 0">
+      {{ getNotificationCount() }}
+    </span>
+  </div>
+
+  <mat-divider></mat-divider>
+
+  <div class="notification-content">
+    <ng-container *ngIf="notifications().length > 0; else empty">
+      <div mat-menu-item *ngFor="let n of notifications()" class="notification-item" (click)="viewNotifications()">
+        <div class="notification-icon">
+          <mat-icon [class]="'icon-' + n.type" color="primary">
+            {{ n.type === 'user-registered' ? 'person_add' : 'verified_user' }}
+          </mat-icon>
+        </div>
+        <div class="notification-body">
+          <span class="notification-message">{{ n.message }}</span>
+          <span class="notification-time">{{ n.timestamp | date: 'short' }}</span>
+        </div>
+        <button mat-icon-button class="notification-close" 
+                (click)="removeNotification(n.id, $event)">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <mat-divider></mat-divider>
+      <button mat-menu-item class="clear-all-btn" (click)="clearNotifications()">
+        <mat-icon>done_all</mat-icon>
+        <span>Clear all</span>
+      </button>
+    </ng-container>
+
+    <ng-template #empty>
+      <div class="empty-state">
+        <mat-icon>notifications_none</mat-icon>
+        <span>No new notifications</span>
+      </div>
+    </ng-template>
+  </div>
+</mat-menu>
+
+<mat-menu #userMenu="matMenu">
+  <div class="user-menu-header">
+    <div class="user-info">
+      <span class="user-name">{{ getUsername() }}</span>
+      <span class="user-role">Support Manager</span>
+    </div>
+  </div>
+  <mat-divider></mat-divider>
+  <button mat-menu-item (click)="logout()">
+    <mat-icon>logout</mat-icon>
+    <span>Logout</span>
+  </button>
+</mat-menu>

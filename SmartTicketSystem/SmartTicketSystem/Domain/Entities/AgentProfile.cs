@@ -7,5 +7,4 @@ public class AgentProfile
     public User User { get; set; }
     public ICollection<AgentCategorySkill> Skills { get; set; } = new List<AgentCategorySkill>();
     public int CurrentWorkload { get; set; } = 0;
-    public int EscalationLevel { get; set; } = 1;
 }

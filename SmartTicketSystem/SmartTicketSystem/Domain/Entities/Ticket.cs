@@ -12,6 +12,7 @@ public class Ticket
     public int StatusId { get; set; }
     public Guid OwnerId { get; set; }
     public Guid? AssignedToId { get; set; }
+    public bool IsAutoAssigned { get; set; } = false;
     public int Severity { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }

@@ -1,0 +1,39 @@
+@import '../all-users/all-users.scss';
+
+.title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  
+  mat-icon {
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
+    color: #6554c0; // Indigo/Purple color for Managers
+  }
+}
+
+.button-group {
+  mat-spinner {
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+}
+
+.admin-card {
+  .mat-column-permissions {
+    width: 200px;
+  }
+  
+  .mat-column-actions {
+    text-align: right;
+    width: 180px;
+  }
+}
+
+.status-chip.active {
+  background-color: #e3fcef;
+  color: #006644;
+  border: 1px solid #abf5d1;
+}

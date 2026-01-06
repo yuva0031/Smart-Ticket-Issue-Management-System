@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+
 using SmartTicketSystem.Application.Interfaces.Repositories;
 using SmartTicketSystem.Domain.Entities;
 using SmartTicketSystem.Infrastructure.Persistence;

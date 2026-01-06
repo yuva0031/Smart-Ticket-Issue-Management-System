@@ -1,0 +1,304 @@
+<div class="ticket-layout" *ngIf="ticket()">
+
+  <div class="main-content">
+    <!-- Back Button -->
+    <button mat-icon-button class="back-button" (click)="goBack()">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+
+    <div class="issue-header">
+      <span class="project-name">Smart Ticket System</span> / 
+      <span class="issue-key">#{{ ticket()?.ticketId }}</span>
+      
+      <!-- SLA Breach Flag -->
+      <span class="sla-flag" [class.breached]="isSlaBreached()" [class.safe]="!isSlaBreached()">
+        <mat-icon>flag</mat-icon>
+        {{ isSlaBreached() ? 'SLA Breached' : 'On Track' }}
+      </span>
+    </div>
+
+    <h1 class="issue-summary">{{ ticket()?.title }}</h1>
+
+    <div class="section-block">
+      <h3>Description</h3>
+      <div class="description-content">
+        {{ ticket()?.description || 'No description provided.' }}
+      </div>
+      <div class="action-row">
+        <button *ngIf="isAgent() || isManager()" 
+                mat-flat-button 
+                color="primary" 
+                (click)="updateTicket()" 
+                [disabled]="loading() || !hasChanges()">
+          <mat-icon>refresh</mat-icon>
+          Update Ticket
+        </button>
+        <span *ngIf="hasChanges() && (isAgent() || isManager())" class="changes-indicator">
+          <mat-icon>info</mat-icon>
+          You have unsaved changes
+        </span>
+      </div>
+    </div>
+    
+    <mat-divider class="section-divider"></mat-divider>
+
+    <div class="activity-section">
+      <h3>Activity</h3>
+      <div class="activity-tabs">
+        <button mat-button [color]="activeTab() === 'comments' ? 'primary' : ''" (click)="activeTab.set('comments')">Comments</button>
+        <button mat-button [color]="activeTab() === 'history' ? 'primary' : ''" (click)="activeTab.set('history')">History</button>
+      </div>
+
+      <!-- Comments Tab -->
+      <div *ngIf="activeTab() === 'comments'">
+        <!-- Show disabled message if ticket is closed/cancelled -->
+        <div *ngIf="isTicketClosedOrCancelled()" class="disabled-comment-notice">
+          <mat-icon>info</mat-icon>
+          <p>Comments are disabled for {{ ticket()?.status?.toLowerCase() }} tickets.</p>
+        </div>
+
+        <!-- Add comment box - disabled if ticket is closed/cancelled -->
+        <div class="add-comment-box" *ngIf="!isTicketClosedOrCancelled()">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Add a comment...</mat-label>
+            <textarea matInput rows="3" [ngModel]="newComment()" (ngModelChange)="newComment.set($event)"></textarea>
+          </mat-form-field>
+          <div class="comment-actions">
+            <button *ngIf="isAgent() || isManager()" 
+                    mat-icon-button 
+                    [color]="internal() ? 'warn' : ''"
+                    (click)="internal.set(!internal())"
+                    matTooltip="Mark as internal (only visible to agents/managers)">
+              <mat-icon>{{ internal() ? 'lock' : 'lock_open' }}</mat-icon>
+            </button>
+            <button mat-raised-button color="primary" (click)="addComment()" [disabled]="loading()">
+              {{ internal() ? 'Save Internal Comment' : 'Save Comment' }}
+            </button>
+          </div>
+        </div>
+
+        <div class="comments-list">
+          <div *ngFor="let c of filteredComments()" class="comment-item">
+            <div class="comment-header">
+              <mat-icon class="user-avatar">account_circle</mat-icon>
+              <div class="comment-meta">
+                <span class="user-name">{{ c.userName }}</span>
+                <span class="comment-date">{{ c.createdAt | date:'medium' }}</span>
+                <span *ngIf="c.isInternal && (isAgent() || isManager())" class="internal-badge">
+                  <mat-icon>lock</mat-icon>
+                  Internal
+                </span>
+              </div>
+            </div>
+            <div class="comment-body">{{ c.message }}</div>
+          </div>
+          
+          <div *ngIf="filteredComments().length === 0" class="no-comments">
+            <mat-icon>chat_bubble_outline</mat-icon>
+            <p>No comments yet. Be the first to comment!</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- History Tab -->
+      <div *ngIf="activeTab() === 'history'" class="history-tab">
+        <div class="timeline-container" *ngIf="sortedHistory().length > 0">
+          <div *ngFor="let h of sortedHistory(); let i = index" class="timeline-item">
+            <div class="timeline-marker">
+              <div class="timeline-dot"></div>
+              <div class="timeline-line" *ngIf="i < sortedHistory().length - 1"></div>
+            </div>
+            <div class="timeline-content">
+              <div class="timeline-header">
+                <mat-icon class="timeline-icon">{{ getHistoryIcon(h.fieldName) }}</mat-icon>
+                <span class="timeline-user">{{ h.changedBy || 'System' }}</span>
+                <span class="timeline-date">{{ h.changedAt | date:'short' }}</span>
+              </div>
+              <div class="timeline-body">
+                <strong>{{ h.fieldName }}</strong> changed from 
+                
+                <ng-container *ngIf="h.fieldName === 'Status'; else checkPrio">
+                  <span class="old-value">{{ getStatusName(h.oldValue) }}</span> to 
+                  <span class="new-value">{{ getStatusName(h.newValue) }}</span>
+                </ng-container>
+
+                <ng-template #checkPrio>
+                  <ng-container *ngIf="h.fieldName === 'Priority'; else standard">
+                    <span class="old-value">{{ getPriorityName(h.oldValue) }}</span> to 
+                    <span class="new-value">{{ getPriorityName(h.newValue) }}</span>
+                  </ng-container>
+                </ng-template>
+
+                <ng-template #standard>
+                  <span class="old-value">{{ h.oldValue || 'None' }}</span> to 
+                  <span class="new-value">{{ h.newValue || 'None' }}</span>
+                </ng-template>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="sortedHistory().length === 0" class="no-history">
+          <mat-icon>history</mat-icon>
+          <p>No history available yet.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="sidebar">
+    
+    <div class="sidebar-group">
+      
+      <div class="sidebar-field">
+        <label>Status</label>
+
+        <button *ngIf="isAgent() || isManager(); else readOnlyStatus" 
+                mat-stroked-button 
+                [matMenuTriggerFor]="statusMenu"
+                class="status-dropdown-btn"
+                [class.has-staged-change]="stagedStatusId() !== null">
+          <span [class.status-closed]="currentStatusName() === 'Closed'">
+            {{ currentStatusName() }}
+          </span>
+          <mat-icon iconPositionEnd>arrow_drop_down</mat-icon>
+        </button>
+
+        <ng-template #readOnlyStatus>
+          <mat-chip-option [selectable]="false" 
+                           [color]="ticket()?.status === 'Closed' ? 'warn' : 'accent'" 
+                           selected>
+            {{ ticket()?.status }}
+          </mat-chip-option>
+        </ng-template>
+
+        <mat-menu #statusMenu="matMenu">
+          <button mat-menu-item 
+                  *ngFor="let s of statuses()" 
+                  (click)="stageStatus(s.id)">
+            {{ s.name }}
+          </button>
+        </mat-menu>
+      </div>
+
+      <div class="sidebar-field">
+        <label>Priority</label>
+
+        <div *ngIf="isAgent() || isManager(); else readOnlyPriority" 
+             class="priority-display clickable" 
+             [matMenuTriggerFor]="priorityMenu"
+             [class.has-staged-change]="stagedPriorityId() !== null">
+          <mat-icon [class]="'prio-icon ' + currentPriorityName().toLowerCase()">flag</mat-icon>
+          <span>{{ currentPriorityName() }}</span>
+          <mat-icon class="dropdown-arrow">expand_more</mat-icon>
+        </div>
+
+        <ng-template #readOnlyPriority>
+          <div class="priority-display">
+            <mat-icon [class]="'prio-icon ' + ticket()?.priority?.toLowerCase()">flag</mat-icon>
+            <span>{{ ticket()?.priority }}</span>
+          </div>
+        </ng-template>
+
+        <mat-menu #priorityMenu="matMenu">
+          <button mat-menu-item 
+                  *ngFor="let p of priorities()" 
+                  (click)="stagePriority(p.id)">
+            <mat-icon [class]="'prio-icon ' + p.name.toLowerCase()">flag</mat-icon>
+            {{ p.name }}
+          </button>
+        </mat-menu>
+      </div>
+    </div>
+
+    <mat-divider></mat-divider>
+
+    <div class="sidebar-group">
+      <h4>People</h4>
+      <div class="sidebar-field">
+        <label>Assignee</label>
+        
+        <div *ngIf="isAgent() || isManager(); else readOnlyAssignee" 
+            class="user-picker clickable" 
+            [matMenuTriggerFor]="assigneeMenu"
+            [class.has-staged-change]="stagedAssigneeId() !== undefined">
+          <mat-icon>account_circle</mat-icon>
+          <div class="user-info">
+            <span class="user-link">{{ currentAssigneeName() }}</span>
+            <span class="user-email" *ngIf="currentAssigneeEmail()">{{ currentAssigneeEmail() }}</span>
+          </div>
+          <mat-icon class="dropdown-arrow">expand_more</mat-icon>
+        </div>
+
+        <ng-template #readOnlyAssignee>
+          <div class="user-picker">
+            <mat-icon>account_circle</mat-icon>
+            <div class="user-info">
+              <span class="user-link">{{ ticket()?.assignedTo || 'Unassigned' }}</span>
+              <span class="user-email" *ngIf="assigneeEmail()">{{ assigneeEmail() }}</span>
+            </div>
+          </div>
+        </ng-template>
+
+        <mat-menu #assigneeMenu="matMenu">
+          <button mat-menu-item (click)="stageAssignee(null)">
+            <mat-icon>person_off</mat-icon>
+            <span>Unassigned</span>
+          </button>
+          
+          <button mat-menu-item 
+                  *ngFor="let agent of agents()" 
+                  (click)="stageAssignee(agent.userId)">
+            <mat-icon>person</mat-icon>
+            <div class="menu-user-info">
+              <span class="menu-user-name">{{ agent.fullName }}</span>
+              <span class="menu-user-email">{{ agent.email }}</span>
+            </div>
+          </button>
+        </mat-menu>
+      </div>
+      
+      <div class="sidebar-field">
+        <label>Reporter</label>
+        <div class="user-picker">
+          <mat-icon>person_outline</mat-icon>
+          
+          <div class="user-info" *ngIf="isAgent() || isManager(); else showYou">
+            <span class="user-link">{{ reporterName() }}</span>
+            <span class="user-email" *ngIf="reporterEmail()">{{ reporterEmail() }}</span>
+          </div>
+
+          <ng-template #showYou>
+            <div class="user-info">
+              <span class="user-link">You (Me)</span>
+            </div>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+
+    <mat-divider></mat-divider>
+
+    <div class="sidebar-group">
+      <h4>Details</h4>
+      <div class="sidebar-field">
+        <label>Category</label>
+        <span>{{ ticket()?.category || 'None' }}</span>
+      </div>
+      <div class="sidebar-field">
+        <label>Created At</label>
+        <span>{{ ticket()?.createdAt | date:'medium' }}</span>
+      </div>
+      <div class="sidebar-field">
+        <label>Updated At</label>
+        <span>{{ ticket()?.updatedAt | date:'medium' }}</span>
+      </div>
+      <div class="sidebar-field">
+        <label>Due Date</label>
+        <span [class.overdue]="isSlaBreached()">
+          {{ ticket()?.dueDate | date: 'medium' }}
+        </span>
+      </div>
+    </div>
+
+  </div>
+</div>

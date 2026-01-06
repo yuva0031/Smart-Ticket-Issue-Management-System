@@ -1,0 +1,91 @@
+<div class="ticket-create-page">
+  <div class="page-header">
+    <div class="header-left">
+      <h2>Create New Issue</h2>
+      <p class="subtitle">Submit a request to the support team</p>
+    </div>
+    <div class="header-actions">
+      <button mat-stroked-button (click)="goBack()" [disabled]="loading()">Cancel</button>
+      <button mat-raised-button color="primary" (click)="submit()" [disabled]="!isValid() || loading()">
+        <mat-spinner *ngIf="loading()" diameter="20"></mat-spinner>
+        <span *ngIf="!loading()">Create Issue</span>
+      </button>
+    </div>
+  </div>
+
+  <mat-divider></mat-divider>
+
+  <div class="form-container">
+    <mat-card class="create-card">
+      <mat-card-content>
+        
+        <div class="field-row">
+          <div class="field-label">
+            <label>Summary <span class="req">*</span></label>
+          </div>
+          <div class="field-control">
+            <mat-form-field appearance="outline">
+              <input matInput 
+                     [ngModel]="title()" 
+                     (ngModelChange)="title.set($event)"
+                     placeholder="Briefly describe the problem">
+              <mat-hint align="end">{{ title().length }}/200</mat-hint>
+            </mat-form-field>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-label">
+            <label>Priority <span class="req">*</span></label>
+          </div>
+          <div class="field-control">
+            <mat-form-field appearance="outline">
+              <mat-select [value]="priorityId()" (selectionChange)="priorityId.set($event.value)">
+                <mat-option *ngFor="let p of priorities()" [value]="p.id">
+                  <mat-icon [class]="'prio-' + p.name.toLowerCase()">flag</mat-icon>
+                  {{ p.name }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-label">
+            <label>Description <span class="req">*</span></label>
+          </div>
+          <div class="field-control">
+            <mat-form-field appearance="outline">
+              <textarea matInput rows="8" 
+                        [ngModel]="description()" 
+                        (ngModelChange)="description.set($event)"
+                        placeholder="Explain the issue in detail..."></textarea>
+            </mat-form-field>
+          </div>
+        </div>
+
+        <div class="field-row static-info">
+          <div class="field-label"><label>Reporter</label></div>
+          <div class="field-control">
+            <div class="reporter-box">
+              <mat-icon>account_circle</mat-icon>
+              <span>{{ currentUser()?.email }}</span>
+            </div>
+          </div>
+        </div>
+
+      </mat-card-content>
+    </mat-card>
+
+    <div class="info-panel" *ngIf="!isValid() && (title() || description())">
+      <div class="warning-box">
+        <mat-icon>warning_amber</mat-icon>
+        <div class="warn-list">
+          <p *ngIf="title().length < 4">Summary must be 4+ chars</p>
+          <p *ngIf="description().length < 6">Description must be 6+ chars</p>
+          <p *ngIf="!priorityId()">Priority is required</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,4 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Lucene.Net.Store;
+
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 using SmartTicketSystem.Application.Interfaces.Repositories;
 using SmartTicketSystem.Domain.Entities;
@@ -15,16 +18,49 @@ public class TicketRepository : ITicketRepository
         => await _context.Tickets.AddAsync(ticket);
 
     public async Task<Ticket?> GetByIdAsync(long ticketId)
-        => await _context.Tickets.Include(t => t.Owner).FirstOrDefaultAsync(t => t.TicketId == ticketId);
-
+    {
+        return await _context.Tickets
+            .Include(t => t.Category)
+            .Include(t => t.Priority)
+            .Include(t => t.Status)
+            .Include(t => t.Owner)
+            .Include(t => t.AssignedTo)
+            .FirstOrDefaultAsync(t => t.TicketId == ticketId);
+    }
     public async Task<IEnumerable<Ticket>> GetByOwnerIdAsync(Guid ownerId)
-        => await _context.Tickets.Where(t => t.OwnerId == ownerId).ToListAsync();
-
+    {
+        return await _context.Tickets
+            .Include(t => t.Category)
+            .Include(t => t.Priority)
+            .Include(t => t.Status)
+            .Include(t => t.Owner)
+            .Include(t => t.AssignedTo)
+            .Where(t => t.OwnerId == ownerId)
+            .ToListAsync();
+    }
     public async Task<IEnumerable<Ticket>> GetByAssignedToAsync(Guid agentId)
-        => await _context.Tickets.Where(t => t.AssignedToId == agentId).ToListAsync();
+    {
+        return await _context.Tickets
+                .Include(t => t.Category)
+                .Include(t => t.Priority)
+                .Include(t => t.Status)
+                .Include(t => t.Owner)
+                .Include(t => t.AssignedTo)
+                .Where(t => t.AssignedToId == agentId)
+                .ToListAsync();
+    }
 
     public async Task<IEnumerable<Ticket>> GetUnassignedAsync()
-        => await _context.Tickets.Where(t => t.AssignedToId == null).ToListAsync();
+    {
+        return await _context.Tickets
+                .Include(t => t.Category)
+                .Include(t => t.Priority)
+                .Include(t => t.Status)
+                .Include(t => t.Owner)
+                .Include(t => t.AssignedTo)
+                .Where(t => t.AssignedToId == null)
+                .ToListAsync();
+    }
 
     public Task UpdateAsync(Ticket ticket)
     {
@@ -40,4 +76,15 @@ public class TicketRepository : ITicketRepository
 
     public async Task SaveAsync()
         => await _context.SaveChangesAsync();
+
+    public async Task<IEnumerable<Ticket>> GetAllTicketsAsync()
+    {
+        return await _context.Tickets
+                .Include(t => t.Category)
+                .Include(t => t.Priority)
+                .Include(t => t.Status)
+                .Include(t => t.Owner)
+                .Include(t => t.AssignedTo)
+                .ToListAsync(); ;
+    }
 }

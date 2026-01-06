@@ -14,7 +14,6 @@ public class AppDbContext : DbContext
     public DbSet<UserRole> UserRoles { get; set; }
     public DbSet<AgentProfile> AgentProfiles { get; set; }
     public DbSet<AgentCategorySkill> AgentCategorySkills { get; set; }
-    public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<Ticket> Tickets { get; set; }
     public DbSet<TicketCategory> TicketCategories { get; set; }
     public DbSet<TicketPriority> TicketPriorities { get; set; }
@@ -22,7 +21,6 @@ public class AppDbContext : DbContext
     public DbSet<TicketHistory> TicketHistories { get; set; }
     public DbSet<TicketComment> TicketComments { get; set; }
     public DbSet<Notification> Notifications { get; set; }
-    public DbSet<ErrorLog> ErrorLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -39,9 +37,19 @@ public class AppDbContext : DbContext
                     .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<UserRole>()
+            .HasKey(ur => ur.UserId);
+
+        modelBuilder.Entity<UserRole>()
             .HasOne(ur => ur.User)
-            .WithMany(u => u.UserRoles)
-            .HasForeignKey(ur => ur.UserId);
+            .WithOne(u => u.UserRole)
+            .HasForeignKey<UserRole>(ur => ur.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<UserRole>()
+            .HasOne(ur => ur.Role)
+            .WithMany(r => r.UserRoles)
+            .HasForeignKey(ur => ur.RoleId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<UserRole>()
             .HasOne(ur => ur.Role)
@@ -119,31 +127,12 @@ public class AppDbContext : DbContext
             .OnDelete(DeleteBehavior.NoAction);
 
         modelBuilder.Entity<Notification>()
-            .HasKey(n => n.NotificationId);
+            .HasKey(n => n.Id);
 
         modelBuilder.Entity<Notification>()
             .HasOne(n => n.User)
             .WithMany(u => u.Notifications)
             .HasForeignKey(n => n.UserId);
-
-        modelBuilder.Entity<RefreshToken>()
-            .HasKey(rt => rt.TokenId);
-
-        modelBuilder.Entity<RefreshToken>()
-            .HasOne(rt => rt.User)
-            .WithMany(u => u.RefreshTokens)
-            .HasForeignKey(rt => rt.UserId);
-
-        modelBuilder.Entity<ErrorLog>()
-            .HasKey(e => e.ErrorId);
-
-        modelBuilder.Entity<ErrorLog>()
-            .Property(e => e.Message)
-            .HasColumnType("nvarchar(max)");
-
-        modelBuilder.Entity<ErrorLog>()
-            .Property(e => e.StackTrace)
-            .HasColumnType("nvarchar(max)");
 
         modelBuilder.Entity<Role>().HasData(
             new Role { RoleId = 1, RoleName = "Admin" },
@@ -153,19 +142,92 @@ public class AppDbContext : DbContext
         );
 
         modelBuilder.Entity<TicketCategory>().HasData(
-            new TicketCategory { CategoryId = 1, Name = "Network", Description = "Network connectivity, Wi-Fi, VPN, or internet access issues" },
-            new TicketCategory { CategoryId = 2, Name = "Hardware", Description = "Physical device issues such as laptop, monitor, keyboard, or peripherals" },
-            new TicketCategory { CategoryId = 3, Name = "Software", Description = "Application crashes, installation failures, bugs, or login issues" },
-            new TicketCategory { CategoryId = 4, Name = "Cloud", Description = "Cloud platform issues related to AWS, Azure, GCP, storage, or deployments" },
-            new TicketCategory { CategoryId = 5, Name = "Security", Description = "Suspicious activity, unauthorized access, malware, or breach-related issues" },
-            new TicketCategory { CategoryId = 6, Name = "HR", Description = "HRMS, payroll, attendance, employee portal, or leave management issues" },
-            new TicketCategory { CategoryId = 7, Name = "Finance", Description = "Billing, invoice, refunds, transaction, and finance portal issues" },
-            new TicketCategory { CategoryId = 8, Name = "Email & Communication", Description = "Email delivery issues, Outlook errors, SMTP/IMAP failures, or communication tools" },
-            new TicketCategory { CategoryId = 9, Name = "Access & Accounts", Description = "Account lockouts, permission errors, password reset, or role access requests" },
-            new TicketCategory { CategoryId = 10, Name = "Database", Description = "Database connectivity, SQL errors, query performance, backups, or migration issues" },
-            new TicketCategory { CategoryId = 11, Name = "DevOps & Deployment", Description = "CI/CD, Docker, Kubernetes, deployment pipeline or build failures" },
-            new TicketCategory { CategoryId = 12, Name = "Miscellaneous", Description = "General issues that do not fit any predefined category" }
+
+            new TicketCategory
+            {
+                CategoryId = 1,
+                Name = "Network",
+                Description = "Network, Wi-Fi, VPN, DNS, or connectivity issues"
+            },
+
+            new TicketCategory
+            {
+                CategoryId = 2,
+                Name = "Hardware",
+                Description = "Physical device or peripheral related issues"
+            },
+
+            new TicketCategory
+            {
+                CategoryId = 3,
+                Name = "Software",
+                Description = "Application, OS, or software malfunction"
+            },
+
+            new TicketCategory
+            {
+                CategoryId = 4,
+                Name = "Cloud",
+                Description = "Cloud platforms, deployments, or infrastructure issues"
+            },
+
+            new TicketCategory
+            {
+                CategoryId = 5,
+                Name = "Security",
+                Description = "Security alerts, access blocks, or threats"
+            },
+
+            new TicketCategory
+            {
+                CategoryId = 6,
+                Name = "HR",
+                Description = "HR systems, payroll, or employee services"
+            },
+
+            new TicketCategory
+            {
+                CategoryId = 7,
+                Name = "Finance",
+                Description = "Billing, payments, or financial transactions"
+            },
+
+            new TicketCategory
+            {
+                CategoryId = 8,
+                Name = "Email & Communication",
+                Description = "Email or communication service issues"
+            },
+
+            new TicketCategory
+            {
+                CategoryId = 9,
+                Name = "Access & Accounts",
+                Description = "Account, role, or permission related issues"
+            },
+
+            new TicketCategory
+            {
+                CategoryId = 10,
+                Name = "Database",
+                Description = "Database connectivity or data issues"
+            },
+
+            new TicketCategory
+            {
+                CategoryId = 11,
+                Name = "DevOps & Deployment",
+                Description = "CI/CD, build, or deployment failures"
+            },
+
+            new TicketCategory
+            {
+                CategoryId = 12,
+                Name = "Miscellaneous",
+                Description = "Uncategorized or general issues"
+            }
         );
+
 
 
         modelBuilder.Entity<TicketPriority>().HasData(

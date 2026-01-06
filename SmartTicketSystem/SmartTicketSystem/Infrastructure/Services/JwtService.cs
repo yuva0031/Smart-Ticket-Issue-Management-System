@@ -4,11 +4,12 @@ using System.Text;
 
 using Microsoft.IdentityModel.Tokens;
 
+using SmartTicketSystem.Application.Services.Interfaces;
 using SmartTicketSystem.Domain.Entities;
 
 namespace SmartTicketSystem.Infrastructure.Services;
 
-public class JwtService
+public class JwtService : IJwtService
 {
     private readonly IConfiguration _config;
 
@@ -22,12 +23,10 @@ public class JwtService
         var claims = new List<Claim>
             {
                 new Claim("id", user.Id.ToString()),
-                new Claim(ClaimTypes.Email, user.Email)
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, user.UserRole.Role.RoleName),
+                new Claim("isActive", user.IsActive.ToString())
             };
-
-        claims.AddRange(user.UserRoles.Select(r =>
-            new Claim(ClaimTypes.Role, r.Role.RoleName)
-        ));
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

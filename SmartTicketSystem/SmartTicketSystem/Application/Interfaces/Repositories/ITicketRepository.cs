@@ -5,6 +5,7 @@ namespace SmartTicketSystem.Application.Interfaces.Repositories;
 public interface ITicketRepository
 {
     Task AddAsync(Ticket ticket);
+    Task<IEnumerable<Ticket>> GetAllTicketsAsync();
     Task<Ticket?> GetByIdAsync(long ticketId);
     Task<IEnumerable<Ticket>> GetByOwnerIdAsync(Guid ownerId);
     Task<IEnumerable<Ticket>> GetByAssignedToAsync(Guid agentId);

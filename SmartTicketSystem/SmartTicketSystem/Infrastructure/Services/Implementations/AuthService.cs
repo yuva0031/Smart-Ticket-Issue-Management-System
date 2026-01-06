@@ -3,113 +3,146 @@ using System.Text;
 
 using AutoMapper;
 
+using SmartTicketSystem.API.Events;
 using SmartTicketSystem.Application.DTOs.Auth;
 using SmartTicketSystem.Application.Interfaces.Repositories;
 using SmartTicketSystem.Application.Services.Interfaces;
 using SmartTicketSystem.Domain.Entities;
 using SmartTicketSystem.Domain.Enums;
+using SmartTicketSystem.Infrastructure.Events;
 
 namespace SmartTicketSystem.Infrastructure.Services.Implementations;
 
 public class AuthService : IAuthService
 {
-    private readonly IUserRepository _repo;
+    private readonly IAuthRepository _repo;
     private readonly IAgentRepository _agentRepo;
     private readonly IMapper _mapper;
-    private readonly JwtService _jwt;
+    private readonly IJwtService _jwt;
+    private readonly IEventQueue _eventQueue;
 
     public AuthService(
-        IUserRepository repo,
+        IAuthRepository repo,
         IAgentRepository agentRepo,
         IMapper mapper,
-        JwtService jwt)
+        IJwtService jwt,
+        IEventQueue eventQueue)
     {
         _repo = repo;
         _agentRepo = agentRepo;
         _mapper = mapper;
         _jwt = jwt;
+        _eventQueue = eventQueue;
     }
 
-    public async Task<string> Register(RegisterUserDto registerUserDto)
+    public async Task<string> Register(RegisterUserDto dto)
     {
-        var exists = await _repo.GetByEmail(registerUserDto.Email);
-        if (exists != null) return "User already exists";
+        if (dto is null)
+            throw new ArgumentNullException(nameof(dto));
 
-        CreatePassword(registerUserDto.Password, out byte[] hash, out byte[] salt);
+        var existing = await _repo.GetByEmail(dto.Email);
+        if (existing != null)
+            throw new InvalidOperationException("User already exists");
 
-        var user = _mapper.Map<User>(registerUserDto);
+        CreatePassword(dto.Password, out var hash, out var salt);
+
+        var requiresApproval =
+            dto.RoleId == (int)UserRoleEnum.SupportAgent ||
+            dto.RoleId == (int)UserRoleEnum.SupportManager;
+
+        var user = _mapper.Map<User>(dto);
         user.PasswordHash = hash;
         user.PasswordSalt = salt;
-        user.Profile = _mapper.Map<UserProfile>(registerUserDto);
+        user.IsActive = !requiresApproval;
+        user.CreatedAt = DateTime.UtcNow;
+
+        user.UserRole = new UserRole
+        {
+            RoleId = dto.RoleId
+        };
 
         await _repo.AddUser(user);
         await _repo.Save();
 
-        user.UserRoles = registerUserDto.RoleIds
-            .Select(id => new UserRole { UserId = user.Id, RoleId = id })
-            .ToList();
-
-        await _repo.Save();
-
-        var agentAssignableRoles = new[]
+        if (dto.RoleId == (int)UserRoleEnum.SupportAgent)
         {
-                (int)UserRoleEnum.SupportAgent
-            };
-
-        if (registerUserDto.RoleIds.Any(r => agentAssignableRoles.Contains(r)))
-        {
-            var profile = new AgentProfile
-            {
-                UserId = user.Id,
-                CurrentWorkload = 0,
-                EscalationLevel = 1
-            };
-
-            await _agentRepo.AddProfileAsync(profile);
-            await _agentRepo.SaveAsync();
-
-            if (registerUserDto.CategorySkillIds != null && registerUserDto.CategorySkillIds.Any())
-            {
-                foreach (var categoryId in registerUserDto.CategorySkillIds)
-                {
-                    await _agentRepo.AddSkillAsync(new AgentCategorySkill
-                    {
-                        AgentProfileId = profile.Id,
-                        CategoryId = categoryId
-                    });
-                }
-
-                await _agentRepo.SaveAsync();
-            }
+            await CreateAgentProfileAsync(user.Id, dto.CategorySkillIds);
         }
+
+        await _eventQueue.PublishAsync(
+            new UserRegisteredEvent(
+                user.Id,
+                user.Email,
+                user.FullName,
+                dto.RoleId,
+                requiresApproval
+            )
+        );
 
         return "Registered Successfully";
     }
 
     public async Task<AuthResponseDto?> Login(LoginDto dto)
     {
-        var user = await _repo.GetByEmailWithRoles(dto.Email);
-        if (user == null || !VerifyPassword(dto.Password, user.PasswordHash, user.PasswordSalt))
+        if (dto is null)
+            throw new ArgumentNullException(nameof(dto));
+
+        var user = await _repo.GetByEmailWithRole(dto.Email);
+
+        if (user == null ||
+            !VerifyPassword(dto.Password, user.PasswordHash, user.PasswordSalt))
             return null;
+
+        if (!user.IsActive)
+            throw new UnauthorizedAccessException("Account pending admin approval");
 
         return new AuthResponseDto
         {
             Name = user.FullName,
-            Roles = user.UserRoles.Select(x => x.Role.RoleName).ToList(),
+            Role = user.UserRole.Role.RoleName,
             Token = _jwt.GenerateToken(user)
         };
     }
 
-    private void CreatePassword(string password, out byte[] hash, out byte[] salt)
+    private async Task CreateAgentProfileAsync(Guid userId, List<int>? skillIds)
     {
+        var profile = new AgentProfile
+        {
+            UserId = userId,
+            CurrentWorkload = 0
+        };
+
+        await _agentRepo.AddProfileAsync(profile);
+
+        if (skillIds?.Any() == true)
+        {
+            foreach (var categoryId in skillIds)
+            {
+                await _agentRepo.AddSkillAsync(new AgentCategorySkill
+                {
+                    AgentProfileId = profile.Id,
+                    CategoryId = categoryId
+                });
+            }
+        }
+
+        await _agentRepo.SaveAsync();
+    }
+
+    private static void CreatePassword(string password, out byte[] hash, out byte[] salt)
+    {
+        if (string.IsNullOrWhiteSpace(password))
+            throw new ArgumentException("Password cannot be empty");
+
         using var hmac = new HMACSHA512();
         salt = hmac.Key;
         hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(password));
     }
 
-    private bool VerifyPassword(string password, byte[] hash, byte[] salt)
+    private static bool VerifyPassword(string password, byte[] hash, byte[] salt)
     {
         using var hmac = new HMACSHA512(salt);
-        return hmac.ComputeHash(Encoding.UTF8.GetBytes(password)).SequenceEqual(hash);
+        var computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(password));
+        return computedHash.SequenceEqual(hash);
     }
 }

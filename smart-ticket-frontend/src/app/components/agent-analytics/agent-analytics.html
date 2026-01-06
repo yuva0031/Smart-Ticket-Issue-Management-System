@@ -1,0 +1,359 @@
+<div class="analytics-container">
+  <!-- Header Section -->
+  <div class="analytics-header">
+    <div class="header-content">
+      <div class="header-title">
+        <mat-icon class="header-icon">analytics</mat-icon>
+        <div>
+          <h1>Performance Analytics</h1>
+          <p class="subtitle">Track your ticket resolution performance and workload metrics</p>
+        </div>
+      </div>
+      
+      <div class="header-actions">
+        <button 
+          mat-button 
+          [matMenuTriggerFor]="dateRangeMenu"
+          class="date-range-button">
+          <mat-icon>{{ getCurrentDateRangeIcon() }}</mat-icon>
+          {{ getCurrentDateRangeLabel() }}
+          <mat-icon>arrow_drop_down</mat-icon>
+        </button>
+        
+        <mat-menu #dateRangeMenu="matMenu">
+          @for (range of dateRanges; track range.value) {
+            <button 
+              mat-menu-item 
+              (click)="selectDateRange(range.value)"
+              [class.active]="selectedDateRange() === range.value">
+              <mat-icon>{{ range.icon }}</mat-icon>
+              <span>{{ range.label }}</span>
+            </button>
+          }
+        </mat-menu>
+        
+        <button mat-stroked-button (click)="refreshData()" [disabled]="loading()">
+          <mat-icon [class.spinning]="loading()">refresh</mat-icon>
+          Refresh
+        </button>
+      </div>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <mat-spinner diameter="60"></mat-spinner>
+      <p>Loading analytics data...</p>
+    </div>
+  } @else {
+    <!-- Key Metrics Cards -->
+    <div class="metrics-grid">
+      @for (metric of metricCards(); track metric.title) {
+        <mat-card class="metric-card" [class]="'metric-' + metric.color">
+          <mat-card-content>
+            <div class="metric-header">
+              <div class="metric-icon-wrapper" [class]="'icon-' + metric.color">
+                <mat-icon>{{ metric.icon }}</mat-icon>
+              </div>
+              <mat-icon 
+                class="info-icon" 
+                [matTooltip]="metric.tooltip"
+                matTooltipPosition="above">
+                info_outline
+              </mat-icon>
+            </div>
+            
+            <div class="metric-value">{{ metric.value }}</div>
+            <div class="metric-title">{{ metric.title }}</div>
+            
+            <div class="metric-change" [class.positive]="metric.change > 0" [class.negative]="metric.change < 0">
+              <mat-icon>{{ metric.change > 0 ? 'arrow_upward' : metric.change < 0 ? 'arrow_downward' : 'remove' }}</mat-icon>
+              <span>{{ metric.change > 0 ? '+' : '' }}{{ metric.change }}%</span>
+              <span class="change-label">{{ metric.changeLabel }}</span>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
+    </div>
+
+    <!-- Charts Row -->
+    <div class="charts-row">
+      <!-- Priority Distribution -->
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>flag</mat-icon>
+            Priority Distribution
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="priority-chart">
+            @for (item of priorityDistribution(); track item.priority) {
+              <div class="priority-item">
+                <div class="priority-label">
+                  <mat-icon [style.color]="item.color">circle</mat-icon>
+                  <span>{{ item.priority }}</span>
+                  <span class="priority-count">{{ item.count }}</span>
+                </div>
+                <div class="priority-bar-container">
+                  <div 
+                    class="priority-bar" 
+                    [style.width.%]="item.percentage"
+                    [style.background-color]="item.color">
+                  </div>
+                </div>
+                <span class="priority-percentage">{{ item.percentage }}%</span>
+              </div>
+            }
+          </div>
+          <!-- @if (priorityDistribution().every(p => p.count === 0)) {
+            <div class="empty-state">
+              <mat-icon>inbox</mat-icon>
+              <p>No tickets in selected period</p>
+            </div>
+          } -->
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Status Distribution with Donut Chart -->
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>donut_small</mat-icon>
+            Status Overview
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          @if (statusDistribution().length > 0) {
+            <div class="status-visualization">
+              <!-- SVG Donut Chart -->
+              <div class="donut-chart-container">
+                <svg viewBox="0 0 200 200" class="donut-chart">
+                  <circle
+                    cx="100"
+                    cy="100"
+                    r="80"
+                    fill="none"
+                    stroke="#e0e0e0"
+                    stroke-width="25"
+                  />
+                  @for (segment of statusSegments(); track $index) {
+                    <circle
+                      cx="100"
+                      cy="100"
+                      r="80"
+                      fill="none"
+                      [attr.stroke]="segment.color"
+                      stroke-width="25"
+                      [attr.stroke-dasharray]="segment.dashArray"
+                      [attr.stroke-dashoffset]="segment.dashOffset"
+                      class="donut-segment"
+                      transform="rotate(-90 100 100)"
+                    />
+                  }
+                  <!-- Center Text -->
+                  <text x="100" y="95" text-anchor="middle" class="donut-total">
+                    {{ agentMetrics().totalAssigned }}
+                  </text>
+                  <text x="100" y="115" text-anchor="middle" class="donut-label">
+                    Total
+                  </text>
+                </svg>
+              </div>
+
+              <!-- Status Legend -->
+              <div class="status-legend">
+                @for (item of statusDistribution(); track item.status) {
+                  <div class="status-item">
+                    <div class="status-label">
+                      <div class="status-dot" [style.background-color]="item.color"></div>
+                      <span>{{ item.status }}</span>
+                    </div>
+                    <div class="status-value">
+                      <span class="status-count">{{ item.count }}</span>
+                      <span class="status-percentage">{{ item.percentage }}%</span>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          } @else {
+            <div class="empty-state">
+              <mat-icon>inbox</mat-icon>
+              <p>No status data available</p>
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Performance Metrics -->
+    <mat-card class="performance-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>speed</mat-icon>
+          Performance Indicators
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="performance-grid">
+          @for (metric of performanceMetrics(); track metric.label) {
+            <div class="performance-metric">
+              <div class="performance-header">
+                <span class="performance-label">{{ metric.label }}</span>
+                <div class="performance-trend" [class]="getTrendClass(metric.trend)">
+                  <mat-icon>{{ getTrendIcon(metric.trend) }}</mat-icon>
+                  <span>{{ metric.trendValue }}%</span>
+                </div>
+              </div>
+              <div class="performance-value">
+                {{ metric.value }}<span class="unit">{{ metric.unit }}</span>
+              </div>
+            </div>
+          }
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Bottom Row -->
+    <div class="bottom-row">
+      <!-- Category Insights -->
+      <mat-card class="insights-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>category</mat-icon>
+            Top Categories
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="category-list">
+            @for (cat of categoryInsights(); track cat.category) {
+              <div class="category-item">
+                <div class="category-info">
+                  <div class="category-name">{{ cat.category }}</div>
+                  <div class="category-meta">
+                    <span class="category-count">
+                      <mat-icon>confirmation_number</mat-icon>
+                      {{ cat.count }} tickets
+                    </span>
+                    <span class="category-time">
+                      <mat-icon>schedule</mat-icon>
+                      {{ cat.avgResolutionTime }}d avg
+                    </span>
+                  </div>
+                </div>
+                <div class="category-percentage">
+                  <mat-chip>{{ cat.percentage }}%</mat-chip>
+                </div>
+              </div>
+            }
+            
+            @if (categoryInsights().length === 0) {
+              <div class="empty-state">
+                <mat-icon>inbox</mat-icon>
+                <p>No category data available</p>
+              </div>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Workload Distribution -->
+      <mat-card class="workload-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>calendar_today</mat-icon>
+            Weekly Workload
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="workload-chart">
+            @for (day of workloadByDay(); track day.day) {
+              <div class="workload-day">
+                <div class="workload-bar-container">
+                  <div 
+                    class="workload-bar" 
+                    [style.height.%]="day.percentage"
+                    [matTooltip]="day.count + ' tickets'">
+                  </div>
+                </div>
+                <div class="workload-label">{{ day.day }}</div>
+                <div class="workload-count">{{ day.count }}</div>
+              </div>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Recent Activity -->
+    @if (recentTickets().length > 0) {
+      <mat-card class="recent-activity-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>history</mat-icon>
+            Recent Activity
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="recent-tickets-list">
+            @for (ticket of recentTickets(); track ticket.ticketId) {
+              <div class="recent-ticket-item" [routerLink]="['/agent/tickets', ticket.ticketId]">
+                <div class="ticket-info">
+                  <div class="ticket-header">
+                    <span class="ticket-id">#{{ ticket.ticketId }}</span>
+                    <mat-chip [style.background-color]="getPriorityColor(ticket.priority)" class="priority-chip">
+                      {{ ticket.priority }}
+                    </mat-chip>
+                  </div>
+                  <div class="ticket-title">{{ ticket.title }}</div>
+                  <div class="ticket-meta">
+                    <span>
+                      <mat-icon>person</mat-icon>
+                      {{ ticket.owner || 'Unknown' }}
+                    </span>
+                    <span>
+                      <mat-icon>access_time</mat-icon>
+                      {{ ticket.createdAt | date:'short' }}
+                    </span>
+                  </div>
+                </div>
+                <div class="ticket-status">
+                  <mat-chip [class]="getStatusClass(ticket.status)">
+                    {{ ticket.status }}
+                  </mat-chip>
+                  <mat-icon class="arrow-icon">arrow_forward</mat-icon>
+                </div>
+              </div>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+    }
+
+    <!-- Insights Banners -->
+    @if (agentMetrics().overdue > 0) {
+      <mat-card class="insights-banner warning">
+        <mat-icon>warning</mat-icon>
+        <div class="banner-content">
+          <h3>Action Required</h3>
+          <p>You have <strong>{{ agentMetrics().overdue }} overdue tickets</strong> that need immediate attention. Consider prioritizing these to maintain SLA compliance.</p>
+        </div>
+        <button mat-raised-button color="warn" routerLink="/agent/tickets">
+          View Overdue
+          <mat-icon>arrow_forward</mat-icon>
+        </button>
+      </mat-card>
+    }
+
+    @if (performanceMetrics()[2].value >= 80) {
+      <mat-card class="insights-banner success">
+        <mat-icon>celebration</mat-icon>
+        <div class="banner-content">
+          <h3>Great Performance!</h3>
+          <p>Your resolution rate of <strong>{{ performanceMetrics()[2].value }}%</strong> is excellent. Keep up the outstanding work!</p>
+        </div>
+      </mat-card>
+    }
+  }
+</div>

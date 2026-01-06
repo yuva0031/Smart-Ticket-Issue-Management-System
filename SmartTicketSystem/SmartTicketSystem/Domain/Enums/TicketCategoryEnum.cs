@@ -8,5 +8,10 @@ public enum TicketCategoryEnum
     Cloud = 4,
     Security = 5,
     HR = 6,
-    Finance = 7
+    Finance = 7,
+    EmailCommunication = 8,
+    AccessAccounts = 9,
+    Database = 10,
+    DevOps = 11
+
 }

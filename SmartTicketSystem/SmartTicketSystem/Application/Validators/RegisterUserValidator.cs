@@ -29,26 +29,24 @@ public class RegisterUserValidator : AbstractValidator<RegisterUserDto>
             .Matches("[0-9]").WithMessage("Must contain at least 1 number")
             .Matches("[^a-zA-Z0-9]").WithMessage("Must contain at least 1 special character");
 
-        RuleFor(x => x.RoleIds)
-            .NotEmpty().WithMessage("At least one role must be assigned")
-            .Must(r => r.All(id => id > 0)).WithMessage("Invalid role id detected");
+        RuleFor(x => x.RoleId)
+            .NotEmpty().WithMessage("A role must be assigned")
+            .Must(r => r > 0).WithMessage("Invalid role id detected");
 
         RuleFor(x => x.PhoneNumber)
             .Matches(@"^[6-9]\d{9}$")
             .When(x => !string.IsNullOrWhiteSpace(x.PhoneNumber))
             .WithMessage("Invalid phone number format");
 
-        RuleFor(x => x.Department)
-            .NotEmpty().WithMessage("Department is required");
-
         RuleFor(x => x.Address)
             .NotEmpty().WithMessage("Address is required")
             .MinimumLength(5).WithMessage("Address is too short");
 
-        When(x => x.RoleIds.Any(r => agentAssignableRoles.Contains(r)), () =>
+        When(x => agentAssignableRoles.Contains(x.RoleId), () =>
         {
             RuleFor(x => x.CategorySkillIds)
-                .NotEmpty().WithMessage("Agent must have skill categories assigned")
+                .NotNull().WithMessage("Agent must have skill categories assigned")
+                .NotEmpty().WithMessage("Agent must have at least one skill category")
                 .Must(list => list.All(id => id > 0))
                 .WithMessage("Skill category IDs must be valid positive numbers");
         });

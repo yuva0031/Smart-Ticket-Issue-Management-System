@@ -1,0 +1,116 @@
+<mat-sidenav-container class="app-container">
+  <mat-sidenav #sidenav mode="side" opened class="app-sidenav">
+    <div class="sidenav-flex-wrapper">
+      <div class="nav-top-content">
+        <div class="portal-header">
+          <mat-icon class="portal-icon">account_circle</mat-icon>
+          <div class="portal-info">
+            <span class="portal-title">User Portal</span>
+            <span class="portal-subtitle">Smart Ticket System</span>
+          </div>
+        </div>
+
+        <div class="action-btn-container">
+          <button mat-flat-button color="primary" class="action-btn" routerLink="/app/create-ticket">
+            <mat-icon>add</mat-icon>
+            Create Ticket
+          </button>
+        </div>
+
+        <mat-divider></mat-divider>
+
+        <mat-nav-list>
+          <a mat-list-item routerLink="/app/dashboard" routerLinkActive="active-link">
+            <mat-icon matListItemIcon>dashboard</mat-icon>
+            <span matListItemTitle>Dashboard</span>
+          </a>
+          <a mat-list-item routerLink="/app/tickets" routerLinkActive="active-link">
+            <mat-icon matListItemIcon>confirmation_number</mat-icon>
+            <span matListItemTitle>My Tickets</span>
+          </a>
+          <mat-divider></mat-divider>
+          <a mat-list-item routerLink="/app/analytics" routerLinkActive="active-link">
+            <mat-icon matListItemIcon>analytics</mat-icon>
+            <span matListItemTitle>My Metrics</span>
+          </a>
+        </mat-nav-list>
+      </div>
+
+      <div class="sidebar-footer">
+        <mat-divider></mat-divider>
+        <button mat-button class="logout-btn" (click)="logout()">
+          <mat-icon>logout</mat-icon>
+          <span>Logout</span>
+        </button>
+      </div>
+    </div>
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+    <mat-toolbar color="primary">
+      <button mat-icon-button (click)="sidenav.toggle()">
+        <mat-icon>menu</mat-icon>
+      </button>
+      <span>User Dashboard</span>
+      <span class="spacer"></span>
+
+      <button mat-icon-button [matMenuTriggerFor]="notificationMenu"
+              [matBadge]="getNotificationCount()" matBadgeColor="warn" 
+              [matBadgeHidden]="getNotificationCount() === 0">
+        <mat-icon>notifications</mat-icon>
+      </button>
+      
+      <button mat-icon-button [matMenuTriggerFor]="userMenu">
+        <mat-icon>account_circle</mat-icon>
+      </button>
+    </mat-toolbar>
+
+    <main class="main-content">
+      <router-outlet></router-outlet>
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>
+
+<mat-menu #notificationMenu="matMenu" class="notification-menu" xPosition="before">
+  <div class="notification-header" (click)="$event.stopPropagation()">
+    <span>Notifications</span>
+    <span class="notification-count" *ngIf="getNotificationCount() > 0">
+      {{ getNotificationCount() }}
+    </span>
+  </div>
+  <mat-divider></mat-divider>
+  <div class="notification-content">
+    <ng-container *ngIf="notifications().length > 0; else empty">
+      <div mat-menu-item *ngFor="let n of notifications()" class="notification-item">
+        <div class="notification-icon">
+          <mat-icon color="primary">{{ n.type === 'ticket-update' ? 'message' : 'info' }}</mat-icon>
+        </div>
+        <div class="notification-body">
+          <span class="notification-message">{{ n.message }}</span>
+          <span class="notification-time">{{ n.timestamp | date: 'shortTime' }}</span>
+        </div>
+        <button mat-icon-button class="notification-close" (click)="removeNotification(n.id, $event)">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+      <mat-divider></mat-divider>
+      <button mat-menu-item class="clear-all-btn" (click)="clearNotifications()">
+        <mat-icon>done_all</mat-icon>
+        <span>Clear all</span>
+      </button>
+    </ng-container>
+    <ng-template #empty>
+      <div class="empty-state">
+        <mat-icon>notifications_none</mat-icon>
+        <span>No new updates</span>
+      </div>
+    </ng-template>
+  </div>
+</mat-menu>
+
+<mat-menu #userMenu="matMenu">
+  <button mat-menu-item (click)="logout()">
+    <mat-icon>logout</mat-icon>
+    <span>Logout</span>
+  </button>
+</mat-menu>

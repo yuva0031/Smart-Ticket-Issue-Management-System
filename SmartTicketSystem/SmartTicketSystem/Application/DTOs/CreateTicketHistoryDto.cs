@@ -2,13 +2,9 @@
 
 public class CreateTicketHistoryDto
 {
-    public CreateTicketHistoryDto(
-        long ticketId,
-        Guid modifiedBy,
-        string fieldName,
-        string oldValue,
-        string newValue
-    )
+    public CreateTicketHistoryDto() { }
+
+    public CreateTicketHistoryDto(long ticketId, Guid modifiedBy, string fieldName, string oldValue, string newValue)
     {
         TicketId = ticketId;
         ModifiedBy = modifiedBy;
@@ -17,9 +13,9 @@ public class CreateTicketHistoryDto
         NewValue = newValue;
     }
 
-    public long TicketId { get; }
-    public Guid ModifiedBy { get; }
-    public string FieldName { get; }
-    public string OldValue { get; }
-    public string NewValue { get; }
+    public long TicketId { get; set; }
+    public Guid ModifiedBy { get; set; }
+    public string FieldName { get; set; }
+    public string OldValue { get; set; }
+    public string NewValue { get; set; }
 }

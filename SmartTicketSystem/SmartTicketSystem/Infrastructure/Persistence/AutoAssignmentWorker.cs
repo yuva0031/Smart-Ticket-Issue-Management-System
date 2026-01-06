@@ -24,15 +24,21 @@ public class AutoAssignmentWorker : BackgroundService
             var lucene = scope.ServiceProvider.GetRequiredService<LuceneCategoryMatcher>();
 
             var unassignedTickets = await context.Tickets
-                .Where(t => t.AssignedToId == null && t.StatusId == 1)
+                .Where(t =>
+                    t.AssignedToId == null &&
+                    t.StatusId == 1 &&
+                    !t.IsAutoAssigned) // 🔒 CRITICAL FLAG
                 .ToListAsync(stoppingToken);
 
             foreach (var ticket in unassignedTickets)
             {
-                int detectedCategoryId = lucene.DetectCategory(ticket.Description);
-                if (detectedCategoryId > 0 && ticket.CategoryId is null)
+                var originalAssigned = ticket.AssignedToId;
+
+                if (ticket.CategoryId == null)
                 {
-                    ticket.CategoryId = detectedCategoryId;
+                    int detectedCategoryId = lucene.DetectCategory(ticket.Description);
+                    if (detectedCategoryId > 0)
+                        ticket.CategoryId = detectedCategoryId;
                 }
 
                 var bestAgent = await context.AgentProfiles
@@ -41,12 +47,16 @@ public class AutoAssignmentWorker : BackgroundService
                     .OrderBy(a => a.CurrentWorkload)
                     .FirstOrDefaultAsync(stoppingToken);
 
-                if (bestAgent != null)
-                {
-                    ticket.AssignedToId = bestAgent.UserId;
-                    ticket.StatusId = 2;
-                    bestAgent.CurrentWorkload += 1;
+                if (bestAgent == null)
+                    continue;
 
+                ticket.AssignedToId = bestAgent.UserId;
+                ticket.StatusId = 2;
+                ticket.IsAutoAssigned = true;
+                bestAgent.CurrentWorkload++;
+
+                if (originalAssigned != ticket.AssignedToId)
+                {
                     await context.TicketHistories.AddAsync(new TicketHistory
                     {
                         TicketId = ticket.TicketId,
@@ -55,12 +65,11 @@ public class AutoAssignmentWorker : BackgroundService
                         OldValue = "Unassigned",
                         NewValue = bestAgent.UserId.ToString(),
                         ChangedAt = DateTime.UtcNow
-                    });
+                    }, stoppingToken);
                 }
             }
 
             await context.SaveChangesAsync(stoppingToken);
-
             await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
         }
     }

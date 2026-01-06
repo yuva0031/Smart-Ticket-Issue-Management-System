@@ -9,6 +9,8 @@ public sealed class TicketCommentUpdatedEvent : IDomainEvent
     public bool IsInternal { get; }
     public DateTime UpdatedAt { get; }
 
+    public DateTime OccurredAt { get; }
+
     public TicketCommentUpdatedEvent(long commentId, long ticketId, Guid userId, string message, bool isInternal)
     {
         CommentId = commentId;

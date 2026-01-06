@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+
 using SmartTicketSystem.Application.DTOs;
 using SmartTicketSystem.Application.DTOs.AddTicketCommentDto;
 using SmartTicketSystem.Application.DTOs.Auth;
@@ -10,33 +11,59 @@ public class MappingProfile : Profile
 {
     public MappingProfile()
     {
+        CreateMap<User, UserDto>()
+            .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.Id))
+            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt))
+            .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.UserRole.Role.RoleName));
+
+        CreateMap<UserProfile, UserProfileDto>()
+            .ForMember(dest => dest.FullName,
+                opt => opt.MapFrom(src => src.User.FullName))
+            .ForMember(dest => dest.Email,
+                opt => opt.MapFrom(src => src.User.Email));
+
+
+        CreateMap<RegisterUserDto, UserProfile>()
+            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow));
+
         CreateMap<RegisterUserDto, User>()
             .ForMember(dest => dest.FullName,
         opt => opt.MapFrom(src => $"{src.FirstName} {src.LastName}"))
             .ForMember(dest => dest.PasswordHash, opt => opt.Ignore())
             .ForMember(dest => dest.PasswordSalt, opt => opt.Ignore());
 
-        CreateMap<RegisterUserDto, UserProfile>();
-
         CreateMap<RegisterUserDto, AgentProfile>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.CurrentWorkload, opt => opt.MapFrom(_ => 0))
-            .ForMember(dest => dest.EscalationLevel, opt => opt.MapFrom(_ => 1))
             .ForMember(dest => dest.Skills, opt => opt.Ignore());
 
+        CreateMap<AgentCategorySkill, AgentSkillDto>()
+            .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.Name));
+
+        CreateMap<AgentProfile, AgentProfileDto>()
+            .ForMember(dest => dest.Skills, opt => opt.MapFrom(src => src.Skills));
+
         CreateMap<CreateTicketDto, Ticket>();
-        CreateMap<UpdateTicketDto, Ticket>()
-            .ForMember(dest => dest.TicketId, opt => opt.Ignore());
+
+        CreateMap<UpdateTicketRequestDto, Ticket>()
+            .ForAllMembers(opt =>
+                opt.Condition((src, dest, srcMember) => srcMember != null));
 
         CreateMap<Ticket, TicketResponseDto>()
-            .ForMember(dest => dest.Category, opt => opt.MapFrom(s => s.Category.Name))
-            .ForMember(dest => dest.Priority, opt => opt.MapFrom(s => s.Priority.PriorityName))
-            .ForMember(dest => dest.Status, opt => opt.MapFrom(s => s.Status.StatusName))
-            .ForMember(dest => dest.Owner, opt => opt.MapFrom(s => s.Owner.FullName))
-            .ForMember(dest => dest.AssignedTo, opt => opt.MapFrom(s =>
-                s.AssignedTo != null ? s.AssignedTo.FullName : "Unassigned"
-            ));
+                    .ForMember(dest => dest.Category, opt => opt.MapFrom(src =>
+                        src.Category != null ? src.Category.Name : "Uncategorized"))
 
+                    .ForMember(dest => dest.Priority, opt => opt.MapFrom(src =>
+                        src.Priority != null ? src.Priority.PriorityName : "Normal"))
+
+                    .ForMember(dest => dest.Status, opt => opt.MapFrom(src =>
+                        src.Status != null ? src.Status.StatusName : "Open"))
+
+                    .ForMember(dest => dest.Owner, opt => opt.MapFrom(src =>
+                        src.Owner != null ? src.Owner.FullName : "Unknown"))
+
+                    .ForMember(dest => dest.AssignedTo, opt => opt.MapFrom(src =>
+                        src.AssignedTo != null ? src.AssignedTo.FullName : "Unassigned"));
 
         CreateMap<CreateTicketHistoryDto, TicketHistory>()
             .ForMember(dest => dest.ChangedAt, opt => opt.MapFrom(_ => DateTime.UtcNow));
@@ -66,7 +93,5 @@ public class MappingProfile : Profile
         CreateMap<Notification, NotificationDto>()
             .ForMember(dest => dest.Channel,
                 opt => opt.MapFrom(n => n.Channel.ToString()));
-
-        CreateMap<ErrorLogDto, ErrorLog>();
     }
 }

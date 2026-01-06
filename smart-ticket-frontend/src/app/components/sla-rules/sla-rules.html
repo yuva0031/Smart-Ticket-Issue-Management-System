@@ -1,0 +1,55 @@
+<div class="sla-container">
+  <div class="header">
+    <button mat-icon-button (click)="goBack()" matTooltip="Go Back">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <h1>SLA Configurations</h1>
+  </div>
+
+  <mat-card class="table-card">
+    <div *ngIf="loading()" class="spinner-overlay">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
+
+    <table class="sla-table">
+      <thead>
+        <tr>
+          <th>Priority Level</th>
+          <th>Resolution Target</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let p of priorities()" matRipple>
+          <td>
+            <div class="priority-cell">
+              <mat-icon [class]="p.priorityName.toLowerCase()">assistant_photo</mat-icon>
+              <span>{{ p.priorityName }}</span>
+            </div>
+          </td>
+          <td>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <input matInput type="number" [(ngModel)]="p.slaHours" min="0">
+              <span matSuffix style="color: #666; font-size: 0.9rem; margin-left: 4px;">hrs</span>
+            </mat-form-field>
+          </td>
+          <td>
+            <button mat-flat-button 
+                    color="primary" 
+                    class="save-btn"
+                    [disabled]="savingId() === p.priorityId"
+                    (click)="saveChanges(p)">
+              
+              <ng-container *ngIf="savingId() !== p.priorityId">
+                <mat-icon>check_circle</mat-icon>
+                Update
+              </ng-container>
+
+              <mat-spinner *ngIf="savingId() === p.priorityId" diameter="20" strokeWidth="3"></mat-spinner>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </mat-card>
+</div>
