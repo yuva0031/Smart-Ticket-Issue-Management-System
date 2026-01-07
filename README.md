@@ -210,15 +210,4 @@ Ideal for:
 ## Project Type
 
 Full Stack Enterprise Application Development - Capstone Project
-
-## License
-
-This project is available under the MIT License.
-
-## Contributing
-
-Contributions are welcome. Please submit pull requests for any enhancements.
-
-## Support
-
-For issues and questions, please use the GitHub Issues section.
+\
