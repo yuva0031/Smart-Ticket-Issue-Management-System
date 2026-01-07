@@ -109,7 +109,6 @@ public class AuthService : IAuthService
         var profile = new AgentProfile
         {
             UserId = userId,
-            CurrentWorkload = 0
         };
 
         await _agentRepo.AddProfileAsync(profile);

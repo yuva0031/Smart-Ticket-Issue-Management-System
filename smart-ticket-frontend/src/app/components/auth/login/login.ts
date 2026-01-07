@@ -16,6 +16,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { AuthService } from '../../../services/auth.service';
+import { catchError, finalize } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 @Component({
   selector: 'app-login',
@@ -49,40 +51,93 @@ export class Login {
   hidePassword = true;
 
   login() {
+    // Clear previous error message
+    this.errorMessage = '';
+
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
       return;
     }
 
     this.loading = true;
-    this.errorMessage = '';
-
     const credentials = this.loginForm.value;
     
-    this.authService.login(credentials).subscribe({
-      next: (res) => {
-        this.authService.saveSession(res);
-        // Get dynamic redirect URL or default to dashboard
-        const destination = this.authService.getRedirectUrl() || '/dashboard';
-        
-        this.router.navigateByUrl(destination, { replaceUrl: true });
-      },
-      error: (err) => {
-        this.loading = false;
+    this.authService.login(credentials).pipe(
+      catchError((err) => {
         this.handleError(err);
+        return of(null); // Return observable to complete the stream
+      }),
+      finalize(() => {
+        this.loading = false; // Always stop loading
+      })
+    ).subscribe({
+      next: (res) => {
+        if (res) { // Only navigate if we have a successful response
+          this.authService.saveSession(res);
+          const destination = this.authService.getRedirectUrl() || '/dashboard';
+          this.router.navigateByUrl(destination, { replaceUrl: true });
+        }
       }
     });
   }
 
-  private handleError(err: any) {
-    if (err.status === 401) {
-      this.errorMessage = 'Invalid organization credentials.';
-    } else if (err.status === 403) {
-      this.errorMessage = 'Account suspended. Contact your administrator.';
-    } else if (err.status === 0) {
-      this.errorMessage = 'Network error. Please check your internet connection.';
-    } else {
-      this.errorMessage = err.error?.message || 'An unexpected error occurred during login.';
+  private handleError(err: any): void {
+    console.error('Login error:', err); // Keep for debugging
+    
+    // Handle different error scenarios
+    if (!err) {
+      this.errorMessage = 'An unexpected error occurred. Please try again.';
+      return;
+    }
+
+    const status = err.status || 0;
+    
+    switch (status) {
+      case 0:
+        this.errorMessage = 'Network error. Please check your internet connection and try again.';
+        break;
+      
+      case 400:
+        this.errorMessage = err.error?.message || 'Invalid credentials. Please check your email and password.';
+        break;
+      
+      case 401:
+        this.errorMessage = 'Invalid email or password. Please try again.';
+        break;
+      
+      case 403:
+        this.errorMessage = 'Account suspended. Please contact your administrator.';
+        break;
+      
+      case 404:
+        this.errorMessage = 'Account not found. Please check your credentials or register.';
+        break;
+      
+      case 429:
+        this.errorMessage = 'Too many login attempts. Please try again later.';
+        break;
+      
+      case 500:
+      case 502:
+      case 503:
+      case 504:
+        this.errorMessage = 'Server error. Please try again later.';
+        break;
+      
+      default:
+        // Try to extract error message from various possible locations
+        this.errorMessage = 
+          err.error?.message || 
+          err.error?.error || 
+          err.message || 
+          'An unexpected error occurred. Please try again.';
+    }
+  }
+
+  // Helper method to clear error when user starts typing
+  clearError(): void {
+    if (this.errorMessage) {
+      this.errorMessage = '';
     }
   }
 }

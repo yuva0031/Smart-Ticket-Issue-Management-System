@@ -63,22 +63,29 @@ export class AdminDashboard implements OnInit, OnDestroy {
     }));
   }
 
-  loadAllData(): void {
-    forkJoin({
-      users: this.userService.getAllUsers(),
-      requests: this.userService.getPendingRoleRequests()
-    }).subscribe(({ users, requests }) => {
-      this.stats.set({
-        activeEndUsers: users.filter(u => u.role === 'User' || !u.role).length,
-        activeAgents: users.filter(u => u.role === 'SupportAgent').length,
-        activeManagers: users.filter(u => u.role === 'SupportManager').length,
-        pendingRequests: requests.length
-      });
-      this.pendingRequests.set(requests.slice(0, 5));
+loadAllData(): void {
+  forkJoin({
+    users: this.userService.getAllUsers(),
+    requests: this.userService.getPendingRoleRequests()
+  }).subscribe(({ users, requests }) => {
+    this.stats.set({
+      activeEndUsers: users.filter(u => u.role === 'EndUser' || !u.role).length,
+      activeAgents: users.filter(u => u.role === 'SupportAgent').length,
+      activeManagers: users.filter(u => u.role === 'SupportManager').length,
+      pendingRequests: requests.length
     });
 
-    this.loadRecentActivity();
-  }
+    const sortedRequests = [...requests].sort((a, b) => {
+      const dateA = new Date(a.createdAt || 0).getTime();
+      const dateB = new Date(b.createdAt || 0).getTime();
+      return dateB - dateA;
+    });
+
+    this.pendingRequests.set(sortedRequests.slice(0, 5));
+  });
+
+  this.loadRecentActivity();
+}
 
   loadRecentActivity(): void {
     this.activityService.getNotifications(1, 10).subscribe(logs => {

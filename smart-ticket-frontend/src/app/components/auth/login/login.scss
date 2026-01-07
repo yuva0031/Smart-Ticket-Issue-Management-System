@@ -3,68 +3,87 @@
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: #f8fafc;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 16px;
+  position: relative;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+      radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+    pointer-events: none;
+  }
 }
 
 .auth-card {
   max-width: 440px;
   width: 100%;
-  padding: 24px 16px;
+  padding: 32px 24px;
   border-radius: 16px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 
+              0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
   border: 1px solid #e2e8f0;
+  background: white;
+  position: relative;
+  z-index: 1;
 
   .brand-header {
     text-align: center;
-    margin-bottom: 12px; // Reduced from 32px
+    margin-bottom: 24px;
 
     .brand-icon {
-      font-size: 40px;
-      height: 40px;
-      width: 40px;
+      font-size: 48px;
+      height: 48px;
+      width: 48px;
       color: #3f51b5;
-      margin-bottom: 4px; // Tightened
+      margin-bottom: 8px;
     }
 
     .project-name {
       margin: 0;
-      font-size: 1.75rem;
+      font-size: 1.875rem;
       font-weight: 800;
       letter-spacing: -0.5px;
       color: #1e293b;
-      line-height: 1.2; // Controlled line height
+      line-height: 1.2;
     }
 
     .project-tagline {
-      margin: 0;
-      font-size: 0.75rem; // Slightly smaller to keep it compact
+      margin: 4px 0 0 0;
+      font-size: 0.75rem;
       color: #94a3b8;
       text-transform: uppercase;
       letter-spacing: 1px;
     }
   }
 
-  // Target the Material Header specifically to remove internal gaps
   mat-card-header {
-    margin-bottom: 20px;
-    padding: 0; // Removes default material header padding
+    margin-bottom: 24px;
+    padding: 0;
     display: block;
     text-align: center;
 
     ::ng-deep .mat-mdc-card-header-text {
-      margin: 0; // Removes default margin from the header text container
+      margin: 0;
     }
 
     mat-card-title {
-      font-size: 1.25rem;
+      font-size: 1.5rem;
       font-weight: 700;
       color: #334155;
-      margin-bottom: 0 !important;
+      margin-bottom: 4px !important;
     }
     
     mat-card-subtitle {
-      margin-top: 2px; // Tightened subtitle gap
+      margin-top: 4px;
+      font-size: 0.875rem;
+      color: #64748b;
     }
   }
 }
@@ -72,7 +91,7 @@
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
 }
 
 .full-width {
@@ -85,37 +104,62 @@
   gap: 12px;
   background-color: #fff1f2;
   color: #be123c;
-  padding: 10px 16px;
+  padding: 12px 16px;
   border-radius: 8px;
-  margin-bottom: 16px;
-  font-size: 0.85rem;
+  margin-bottom: 20px;
+  font-size: 0.875rem;
   border: 1px solid #fecdd3;
+  animation: slideDown 0.3s ease-out;
 
   mat-icon {
-    font-size: 18px;
-    height: 18px;
-    width: 18px;
+    font-size: 20px;
+    height: 20px;
+    width: 20px;
+    flex-shrink: 0;
+  }
+
+  span {
+    line-height: 1.4;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
 .submit-btn {
   height: 52px;
-  margin-top: 12px;
+  margin-top: 16px;
   font-size: 1rem;
   font-weight: 600;
   border-radius: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 
   .loading-wrapper {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 12px;
+
+    span {
+      font-size: 0.875rem;
+    }
   }
 }
 
 .footer-links {
   text-align: center;
-  margin-top: 24px;
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid #e2e8f0;
   font-size: 0.9rem;
   color: #64748b;
 
@@ -124,11 +168,61 @@
     text-decoration: none;
     font-weight: 600;
     margin-left: 6px;
-    &:hover { text-decoration: underline; }
+    transition: color 0.2s ease;
+    
+    &:hover { 
+      text-decoration: underline;
+      color: #303f9f;
+    }
   }
 }
 
 mat-icon[matPrefix] {
   color: #94a3b8;
   margin-right: 8px;
+}
+
+// Material form field customization
+::ng-deep {
+  .mat-mdc-form-field {
+    .mat-mdc-text-field-wrapper {
+      padding-bottom: 0;
+    }
+    
+    .mat-mdc-form-field-subscript-wrapper {
+      margin-top: 4px;
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 480px) {
+  .login-container {
+    padding: 12px;
+  }
+
+  .auth-card {
+    padding: 24px 16px;
+
+    .brand-header {
+      .project-name {
+        font-size: 1.5rem;
+      }
+
+      .project-tagline {
+        font-size: 0.7rem;
+      }
+    }
+
+    mat-card-header {
+      mat-card-title {
+        font-size: 1.25rem;
+      }
+    }
+  }
+
+  .error-banner {
+    font-size: 0.8rem;
+    padding: 10px 12px;
+  }
 }

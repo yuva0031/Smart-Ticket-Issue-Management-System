@@ -61,21 +61,11 @@
         <td mat-cell *matCellDef="let m">{{ m.createdAt | date:'MMM d, yyyy' }}</td>
       </ng-container>
 
-      <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef>Actions</th>
-        <td mat-cell *matCellDef="let m">
-          <button mat-button color="warn" (click)="revokeAccess(m)">
-            <mat-icon>remove_circle</mat-icon>
-            Revoke Access
-          </button>
-        </td>
-      </ng-container>
-
       <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
       <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
 
       <tr *ngIf="filteredManagers().length === 0 && !loading()">
-        <td colspan="5" class="no-data">
+        <td colspan="4" class="no-data">
           <mat-icon>security_update_warning</mat-icon>
           <p *ngIf="searchTerm()">No managers found matching "{{ searchTerm() }}"</p>
           <p *ngIf="!searchTerm()">No managers assigned yet.</p>

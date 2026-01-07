@@ -9,7 +9,7 @@
     font-size: 28px;
     width: 28px;
     height: 28px;
-    color: #6554c0; // Indigo/Purple color for Managers
+    color: #6554c0;
   }
 }
 
@@ -23,12 +23,7 @@
 
 .admin-card {
   .mat-column-permissions {
-    width: 200px;
-  }
-  
-  .mat-column-actions {
-    text-align: right;
-    width: 180px;
+    width: 220px;
   }
 }
 

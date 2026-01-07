@@ -17,7 +17,7 @@
         <span>{{ successMessage }}</span>
       </div>
       <div *ngIf="errorMessage" class="alert error">
-        <mat-icon>error</mat-icon>
+        <mat-icon>error_outline</mat-icon>
         <span>{{ errorMessage }}</span>
       </div>
 
@@ -25,41 +25,78 @@
         <div class="form-row">
           <mat-form-field appearance="outline">
             <mat-label>First Name</mat-label>
-            <input matInput formControlName="firstName" placeholder="Enter first name">
-            <mat-error *ngIf="f['firstName'].errors?.['required']">Required</mat-error>
+            <input 
+              matInput 
+              formControlName="firstName" 
+              placeholder="Enter first name"
+              (input)="clearMessages()">
+            <mat-error *ngIf="f['firstName'].errors?.['required']">First name is required</mat-error>
+            <mat-error *ngIf="f['firstName'].errors?.['minlength']">Minimum 2 characters required</mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
             <mat-label>Last Name</mat-label>
-            <input matInput formControlName="lastName" placeholder="Enter last name">
-            <mat-error *ngIf="f['lastName'].errors?.['required']">Required</mat-error>
+            <input 
+              matInput 
+              formControlName="lastName" 
+              placeholder="Enter last name"
+              (input)="clearMessages()">
+            <mat-error *ngIf="f['lastName'].errors?.['required']">Last name is required</mat-error>
+            <mat-error *ngIf="f['lastName'].errors?.['minlength']">Minimum 2 characters required</mat-error>
           </mat-form-field>
         </div>
 
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Work Email Address</mat-label>
           <mat-icon matPrefix>email</mat-icon>
-          <input matInput type="email" formControlName="email" placeholder="juser@gmail.com">
-          <mat-error *ngIf="f['email'].errors?.['email']">Invalid email format</mat-error>
+          <input 
+            matInput 
+            type="email" 
+            formControlName="email" 
+            placeholder="john.doe@company.com"
+            (input)="clearMessages()">
+          <mat-error *ngIf="f['email'].errors?.['email']">Please enter a valid email address</mat-error>
           <mat-error *ngIf="f['email'].errors?.['required']">Email is required</mat-error>
         </mat-form-field>
 
         <div class="form-row">
           <mat-form-field appearance="outline">
             <mat-label>Password</mat-label>
-            <input matInput [type]="hidePassword ? 'password' : 'text'" formControlName="password">
-            <button mat-icon-button matSuffix (click)="hidePassword = !hidePassword" type="button" tabindex="-1">
+            <mat-icon matPrefix>lock</mat-icon>
+            <input 
+              matInput 
+              [type]="hidePassword ? 'password' : 'text'" 
+              formControlName="password"
+              (input)="clearMessages()">
+            <button 
+              mat-icon-button 
+              matSuffix 
+              (click)="hidePassword = !hidePassword" 
+              type="button" 
+              tabindex="-1">
               <mat-icon>{{hidePassword ? 'visibility_off' : 'visibility'}}</mat-icon>
             </button>
-            <mat-error *ngIf="f['password'].errors?.['minlength']">Min 6 characters</mat-error>
+            <mat-error *ngIf="f['password'].errors?.['required']">Password is required</mat-error>
+            <mat-error *ngIf="f['password'].errors?.['minlength']">Minimum 6 characters required</mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
             <mat-label>Confirm Password</mat-label>
-            <input matInput [type]="hideConfirmPassword ? 'password' : 'text'" formControlName="confirmPassword">
-            <button mat-icon-button matSuffix (click)="hideConfirmPassword = !hideConfirmPassword" type="button" tabindex="-1">
+            <mat-icon matPrefix>lock_outline</mat-icon>
+            <input 
+              matInput 
+              [type]="hideConfirmPassword ? 'password' : 'text'" 
+              formControlName="confirmPassword"
+              (input)="clearMessages()">
+            <button 
+              mat-icon-button 
+              matSuffix 
+              (click)="hideConfirmPassword = !hideConfirmPassword" 
+              type="button" 
+              tabindex="-1">
               <mat-icon>{{hideConfirmPassword ? 'visibility_off' : 'visibility'}}</mat-icon>
             </button>
+            <mat-error *ngIf="f['confirmPassword'].errors?.['required']">Please confirm your password</mat-error>
             <mat-error *ngIf="f['confirmPassword'].errors?.['passwordMismatch']">Passwords don't match</mat-error>
           </mat-form-field>
         </div>
@@ -70,15 +107,18 @@
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Organizational Role</mat-label>
           <mat-icon matPrefix>badge</mat-icon>
-          <mat-select formControlName="roleId">
-            <mat-option *ngFor="let r of lookupService.roles()" [value]="r.id">
+          <mat-select formControlName="roleId" (selectionChange)="clearMessages()">
+            <mat-option *ngFor="let r of getAvailableRoles()" [value]="r.id">
               {{ r.name }}
             </mat-option>
           </mat-select>
           <mat-error *ngIf="f['roleId'].errors?.['required']">Please select your role</mat-error>
         </mat-form-field>
 
-        <mat-form-field appearance="outline" class="full-width animate-fade" *ngIf="isSupportAgentById(f['roleId'].value)">
+        <mat-form-field 
+          appearance="outline" 
+          class="full-width animate-fade" 
+          *ngIf="isSupportAgentById(f['roleId'].value)">
           <mat-label>Specialization Skills</mat-label>
           <mat-icon matPrefix>psychology</mat-icon>
           <mat-select multiple formControlName="categorySkillIds">
@@ -92,10 +132,24 @@
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Contact Number</mat-label>
           <mat-icon matPrefix>phone</mat-icon>
-          <input matInput formControlName="phoneNumber" placeholder="(+91) 98765 43210">
+          <input 
+            matInput 
+            formControlName="phoneNumber" 
+            placeholder="(+91) 98765-43210"
+            (input)="clearMessages()">
         </mat-form-field>
 
-        <button mat-raised-button color="primary" type="submit" [disabled]="loading" class="register-button">
+        <div class="info-notice" *ngIf="isManagerById(f['roleId'].value) || isSupportAgentById(f['roleId'].value)">
+          <mat-icon>info</mat-icon>
+          <span>Your account will require admin approval before you can access the system.</span>
+        </div>
+
+        <button 
+          mat-raised-button 
+          color="primary" 
+          type="submit" 
+          [disabled]="loading || registerForm.invalid" 
+          class="register-button">
           <span *ngIf="!loading">Create Account</span>
           <div class="loading-wrapper" *ngIf="loading">
             <mat-spinner diameter="20" color="accent"></mat-spinner>

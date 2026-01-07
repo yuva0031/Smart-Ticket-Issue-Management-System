@@ -29,20 +29,18 @@ export class Managers implements OnInit {
   private userService = inject(UserService);
   private snackBar = inject(MatSnackBar);
 
-  // State Signals
   managers = signal<UserDto[]>([]);
   searchTerm = signal('');
   loading = signal(false);
   
-  // Table State Signals
   pageIndex = signal(0);
   pageSize = signal(10);
   sortField = signal('email');
   sortDirection = signal<'asc' | 'desc' | ''>('asc');
 
-  displayedColumns = ['email', 'fullName', 'permissions', 'joined', 'actions'];
+  // Removed 'actions'
+  displayedColumns = ['email', 'fullName', 'permissions', 'joined'];
 
-  // Reactive Multi-field Filter
   filteredManagers = computed(() => {
     let result = this.managers();
     const query = this.searchTerm().toLowerCase().trim();
@@ -53,11 +51,9 @@ export class Managers implements OnInit {
         m.fullName?.toLowerCase().includes(query)
       );
     }
-
     return this.sortData(result);
   });
 
-  // Reactive Pagination
   paginatedManagers = computed(() => {
     const start = this.pageIndex() * this.pageSize();
     const end = start + this.pageSize();
@@ -79,7 +75,6 @@ export class Managers implements OnInit {
         this.loading.set(false);
       },
       error: (err) => {
-        console.error('Error loading managers', err);
         this.showMessage('Failed to load managers', 'error');
         this.loading.set(false);
       }
@@ -119,7 +114,7 @@ export class Managers implements OnInit {
   }
 
   applyFilter(): void {
-    this.pageIndex.set(0); // Reset to page 1 on filter
+    this.pageIndex.set(0);
   }
 
   clearSearch(): void {
@@ -129,14 +124,6 @@ export class Managers implements OnInit {
 
   refreshData(): void {
     this.loadManagers();
-  }
-
-  revokeAccess(manager: UserDto): void {
-    if (confirm(`Revoke manager access for ${manager.email}?`)) {
-      // Local removal logic for UI demo
-      this.managers.update(list => list.filter(m => m.userId !== manager.userId));
-      this.showMessage('Manager access revoked', 'success');
-    }
   }
 
   getInitials(email: string): string {

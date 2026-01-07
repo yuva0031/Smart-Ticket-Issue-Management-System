@@ -19,6 +19,8 @@ import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
 import { LookupService } from '../../../services/lookup.service';
 import { RegisterRequest } from '../../../models/Model';
+import { catchError, finalize } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 @Component({
   selector: 'app-register',
@@ -76,7 +78,7 @@ export class RegisterComponent implements OnInit {
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]],
       confirmPassword: ['', [Validators.required]],
-      phoneNumber: ['', [Validators.pattern('^[0-9+ ]*$')]],
+      phoneNumber: ['', [Validators.pattern('^[0-9+ ()-]*$')]],
       address: [''],
       roleId: [null, [Validators.required]],
       categorySkillIds: [[]]
@@ -109,19 +111,60 @@ export class RegisterComponent implements OnInit {
     return role.name.replace(/\s/g, '').toLowerCase() === 'supportagent';
   }
 
+  isManagerById(roleId: any): boolean {
+    if (!roleId) return false;
+    const role = this.lookupService.roles().find(r => r.id === Number(roleId));
+    if (!role) return false;
+    return role.name.replace(/\s/g, '').toLowerCase() === 'supportmanager';
+  }
+
+  isAdminById(roleId: any): boolean {
+    if (!roleId) return false;
+    const role = this.lookupService.roles().find(r => r.id === Number(roleId));
+    if (!role) return false;
+    return role.name.replace(/\s/g, '').toLowerCase() === 'admin';
+  }
+
+  // Filter roles to exclude Admin from selection
+  getAvailableRoles() {
+    return this.lookupService.roles().filter(role => 
+      role.name.replace(/\s/g, '').toLowerCase() !== 'admin'
+    );
+  }
+
   get f() { return this.registerForm.controls; }
 
+  // Clear error/success messages when user starts typing
+  clearMessages(): void {
+    if (this.errorMessage || this.successMessage) {
+      this.errorMessage = '';
+      this.successMessage = '';
+    }
+  }
+
   register() {
+    // Clear previous messages
+    this.errorMessage = '';
+    this.successMessage = '';
+
     if (this.registerForm.invalid) {
       this.registerForm.markAllAsTouched();
+      this.errorMessage = 'Please fill in all required fields correctly.';
       return;
     }
 
     this.loading = true;
-    this.errorMessage = '';
-    this.successMessage = '';
     
     const val = this.registerForm.value;
+    const selectedRoleId = val.roleId;
+
+    // Check if trying to register as Admin (shouldn't be possible with filtered list)
+    if (this.isAdminById(selectedRoleId)) {
+      this.loading = false;
+      this.errorMessage = 'Admin accounts cannot be created through registration. Please contact system administrator.';
+      return;
+    }
+
     const payload: RegisterRequest = {
       FirstName: val.firstName,
       LastName: val.lastName,
@@ -133,19 +176,83 @@ export class RegisterComponent implements OnInit {
       address: val.address
     };
 
-    this.authService.register(payload).subscribe({
-      next: () => {
-        this.successMessage = 'Organizational account created! Redirecting to login...';
-        setTimeout(() => this.router.navigate(['/login']), 2500);
-      },
-      error: err => {
+    this.authService.register(payload).pipe(
+      catchError((err) => {
+        this.handleError(err);
+        return of(null);
+      }),
+      finalize(() => {
         this.loading = false;
-        if (err.status === 409) {
-          this.errorMessage = 'This email is already associated with an account.';
-        } else {
-          this.errorMessage = err.error?.message || 'Onboarding failed. Please contact your IT support.';
+      })
+    ).subscribe({
+      next: (response) => {
+        if (response) {
+          this.handleSuccessfulRegistration(selectedRoleId);
         }
       }
     });
+  }
+
+  private handleSuccessfulRegistration(roleId: any): void {
+    const isManager = this.isManagerById(roleId);
+    const isAgent = this.isSupportAgentById(roleId);
+
+    if (isManager || isAgent) {
+      const roleType = isManager ? 'Manager' : 'Support Agent';
+      this.successMessage = `✓ Registration successful! Your ${roleType} account requires admin approval. You will receive an email once approved.`;
+      
+      // Redirect to login after 4 seconds to give user time to read
+      setTimeout(() => {
+        this.router.navigate(['/login']);
+      }, 4000);
+    } else {
+      // For any other role (if applicable)
+      this.successMessage = '✓ Registration successful! Redirecting to login...';
+      setTimeout(() => {
+        this.router.navigate(['/login']);
+      }, 2500);
+    }
+  }
+
+  private handleError(err: any): void {
+    console.error('Registration error:', err);
+    
+    if (!err) {
+      this.errorMessage = 'An unexpected error occurred. Please try again.';
+      return;
+    }
+
+    const status = err.status || 0;
+    
+    switch (status) {
+      case 0:
+        this.errorMessage = 'Network error. Please check your internet connection and try again.';
+        break;
+      
+      case 400:
+        this.errorMessage = err.error?.message || 'Invalid registration data. Please check all fields.';
+        break;
+      
+      case 409:
+        this.errorMessage = 'This email is already registered. Please use a different email or sign in.';
+        break;
+      
+      case 422:
+        this.errorMessage = 'Validation failed. Please check your input and try again.';
+        break;
+      
+      case 500:
+      case 502:
+      case 503:
+      case 504:
+        this.errorMessage = 'Server error. Please try again later or contact support.';
+        break;
+      
+      default:
+        this.errorMessage = 
+          err.error?.message || 
+          err.message || 
+          'Registration failed. Please contact IT support.';
+    }
   }
 }

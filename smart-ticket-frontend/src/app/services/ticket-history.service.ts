@@ -5,7 +5,7 @@ import { environment } from '../../environments/environment.development';
 
 @Injectable({ providedIn: 'root' })
 export class TicketHistoryService {
-  private apiUrl = `${environment.apiUrl}/user`;
+  private apiUrl = `${environment.apiUrl}/tickets`;
   constructor(private http: HttpClient) {}
 
   getHistory(ticketId: number) {

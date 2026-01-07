@@ -402,18 +402,16 @@ export class TicketDetails implements OnInit, OnDestroy {
     });
   }
 
-  // CANCEL TICKET (End User Only)
   cancelTicket(): void {
     const t = this.ticket();
     if (!t) return;
 
     this.loading.set(true);
 
-    // Find the "Cancelled" status ID
     const cancelledStatus = this.statuses().find(s => s.name.toLowerCase() === 'cancelled');
     
     if (!cancelledStatus) {
-      this.snackBar.open('❌ Cancelled status not found', 'OK', { duration: 3000 });
+      this.snackBar.open('Cancelled status not found', 'OK', { duration: 3000 });
       this.loading.set(false);
       return;
     }
@@ -429,11 +427,11 @@ export class TicketDetails implements OnInit, OnDestroy {
 
     this.ticketService.updateTicket(this.ticketId, updates).subscribe({
       next: () => {
-        this.snackBar.open('✅ Ticket cancelled successfully', 'OK', { duration: 3000 });
+        this.snackBar.open('Ticket cancelled successfully', 'OK', { duration: 3000 });
         this.loading.set(false);
       },
       error: () => {
-        this.snackBar.open('❌ Failed to cancel ticket', 'OK', { duration: 3000 });
+        this.snackBar.open('Failed to cancel ticket', 'OK', { duration: 3000 });
         this.loading.set(false);
       }
     });
@@ -445,7 +443,7 @@ export class TicketDetails implements OnInit, OnDestroy {
     
     // Prevent adding comments if ticket is closed or cancelled
     if (this.isTicketClosedOrCancelled()) {
-      this.snackBar.open('❌ Cannot add comments to closed or cancelled tickets', 'OK', { duration: 3000 });
+      this.snackBar.open('Cannot add comments to closed or cancelled tickets', 'OK', { duration: 3000 });
       return;
     }
     

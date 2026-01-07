@@ -10,7 +10,6 @@ using SmartTicketSystem.Domain.Entities;
 using SmartTicketSystem.Domain.Enums;
 using SmartTicketSystem.Infrastructure.Services.Implementations;
 using SmartTicketSystem.Infrastructure.Events;
-
 using Xunit;
 
 namespace SmartTicketSystem.Tests.service;
@@ -57,10 +56,10 @@ public class AuthServiceUnitTests
     public async Task Register_SupportAgent_CreatesAgentProfileAndSkills()
     {
         // Arrange
-        var dto = new RegisterUserDto 
-        { 
-            Email = "agent@test.com", 
-            Password = "SecurePassword123", 
+        var dto = new RegisterUserDto
+        {
+            Email = "agent@test.com",
+            Password = "SecurePassword123",
             RoleId = (int)UserRoleEnum.SupportAgent,
             CategorySkillIds = new List<int> { 1, 2 }
         };
@@ -70,10 +69,10 @@ public class AuthServiceUnitTests
         _mockMapper.Setup(m => m.Map<User>(dto)).Returns(user);
 
         // Act
-        var result = await _service.Register(dto);
+        await _service.Register(dto);
 
         // Assert
-        Assert.False(user.IsActive); 
+        Assert.False(user.IsActive);
         _mockAgentRepo.Verify(r => r.AddProfileAsync(It.Is<AgentProfile>(p => p.UserId == user.Id)), Times.Once);
         _mockAgentRepo.Verify(r => r.AddSkillAsync(It.IsAny<AgentCategorySkill>()), Times.Exactly(2));
         _mockAgentRepo.Verify(r => r.SaveAsync(), Times.Once);
@@ -86,6 +85,7 @@ public class AuthServiceUnitTests
         // Arrange
         var dto = new RegisterUserDto { Email = "mgr@test.com", Password = "Password123", RoleId = (int)UserRoleEnum.SupportManager };
         var user = new User { Id = Guid.NewGuid() };
+
         _mockAuthRepo.Setup(r => r.GetByEmail(dto.Email)).ReturnsAsync((User?)null);
         _mockMapper.Setup(m => m.Map<User>(dto)).Returns(user);
 
@@ -93,7 +93,7 @@ public class AuthServiceUnitTests
         await _service.Register(dto);
 
         // Assert
-        Assert.False(user.IsActive); 
+        Assert.False(user.IsActive);
         _mockAgentRepo.Verify(r => r.AddProfileAsync(It.IsAny<AgentProfile>()), Times.Never);
     }
 
@@ -102,8 +102,8 @@ public class AuthServiceUnitTests
     {
         // Arrange
         var dto = new LoginDto { Email = "user@test.com", Password = "WrongPassword" };
-        var salt = new byte[128]; 
-        var hash = new byte[64];  
+        var salt = new byte[128];
+        var hash = new byte[64];
         var user = new User { PasswordSalt = salt, PasswordHash = hash };
 
         _mockAuthRepo.Setup(r => r.GetByEmailWithRole(dto.Email)).ReturnsAsync(user);
