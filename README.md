@@ -69,6 +69,12 @@ Configure the database connection in `appsettings.json`:
 }
 ```
 
+Restore dependencies:
+
+```bash
+dotnet run
+```
+
 Note: You can use SQL Server LocalDB or Express for local development.
 
 Apply database migrations:
@@ -81,7 +87,7 @@ Run the API:
 dotnet run
 ```
 
-The backend will start at: `https://localhost:7074`
+The backend will start at: `https://localhost:7074`. Swagger UI is available at http://localhost:7074/swagger for API exploration.
 
 ### 3. Frontend Setup
 
