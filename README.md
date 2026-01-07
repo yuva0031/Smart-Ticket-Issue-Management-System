@@ -87,7 +87,7 @@ The backend will start at: `https://localhost:7074`
 
 Open a new terminal window and navigate to the frontend directory:
 ```bash
-cd smart-ticket-ui
+cd smart-ticket-frontend
 ```
 
 Install dependencies:
