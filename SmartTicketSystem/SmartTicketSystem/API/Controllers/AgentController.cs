@@ -53,7 +53,7 @@ public class AgentController : ControllerBase
     }
 
     [HttpPost("add-skill")]
-    [Authorize(Roles = "Admin,SupportManager")]
+    [Authorize(Roles = "Admin,SupportAgent")]
     public async Task<IActionResult> AddSkill([FromBody] AddAgentSkillDto dto)
     {
         var result = await _service.AddCategorySkill(dto);
@@ -61,7 +61,7 @@ public class AgentController : ControllerBase
     }
 
     [HttpDelete("remove-skill")]
-    [Authorize(Roles = "Admin,SupportManager")]
+    [Authorize(Roles = "Admin,SupportAgent")]
     public async Task<IActionResult> RemoveSkill([FromBody] RemoveAgentSkillDto dto)
     {
         var result = await _service.RemoveCategorySkill(dto);
